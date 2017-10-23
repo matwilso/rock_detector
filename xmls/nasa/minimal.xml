@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model='nasa_minimal'>
+	<asset>
+		<mesh file="nasa_minimal.stl" name="minimal"></mesh>
+
+		<texture builtin="flat" name="arena_tex" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_mat" shininess="0.03" specular="0.75" texture="arena_tex"></material>
+        <texture type="skybox" builtin="gradient" name="skybox_tex" rgb1="1 1 1" rgb2=".6 .8 1" 
+                 width="256" height="256"/>
+
+		<material name="skybox_mat" shininess="0.03" specular="0.75" texture="skybox_tex"></material>
+	</asset>
+
+	<default>
+		<default class="arena">
+			<geom margin="0.001" material="skybox_mat" rgba="1 1 1 1" solimp="0.99 0.99 0.01" solref="0.01 1" type="mesh" user="0"></geom>
+		</default>
+	</default>
+
+	<worldbody>
+		<!-- TODO: set z height to be flat with ground (z=0), so we can also use a flat ground plane -->
+		<!-- probably by having a ground plane as reference and then tweaking -->
+		<body childclass="arena" name="base_link" pos="0 0 0">
+			<body name="minimal">
+			  <geom mesh="minimal" name="minimal" material="arena_mat"></geom>
+			</body>
+		</body>
+	</worldbody>
+</mujoco>

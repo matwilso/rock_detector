@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model='nasa_minimal'>
+	<asset>
+		<mesh file="nasa_full.stl" name="minimal"></mesh>
+
+		<texture builtin="flat" name="arena_tex" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_mat" shininess="0.03" specular="0.75" texture="arena_tex"></material>
+	</asset>
+
+	<default>
+		<default class="arena">
+			<geom margin="0.001" material="arena_mat" rgba="1 1 1 1" solimp="0.99 0.99 0.01" solref="0.01 1" type="mesh" user="0"></geom>
+		</default>
+	</default>
+
+	<worldbody>
+		<body childclass="arena" name="base_link" pos="0 0 0">
+			<body name="minimal">
+			  <geom mesh="minimal" name="minimal" material="arena_mat"></geom>
+			</body>
+		</body>
+	</worldbody>
+</mujoco>
