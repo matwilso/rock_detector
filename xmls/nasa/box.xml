@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mujoco model='nasa_geo'>
 	<asset>
+		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture name="rock2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture name="rock3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="floor_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="left_tex"  builtin="flat"  height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="right_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -9,6 +12,9 @@
         <texture type="skybox"    builtin="gradient" name="skybox_tex" rgb1="1 1 1" rgb2=".6 .8 1" 
                  width="256" height="256"/>
 
+		<material name="rock1_mat" shininess="0.03" specular="0.75" texture="rock1_tex"></material>
+		<material name="rock2_mat" shininess="0.03" specular="0.75" texture="rock2_tex"></material>
+		<material name="rock3_mat" shininess="0.03" specular="0.75" texture="rock3_tex"></material>
 		<material name="floor_mat" shininess="0.03" specular="0.75" texture="floor_tex"></material>
 		<material name="left_mat" shininess="0.03" specular="0.75" texture="left_tex"></material>
 		<material name="right_mat" shininess="0.03" specular="0.75" texture="right_tex"></material>
@@ -46,31 +52,44 @@
 	  <light name="light3" pos="-2.29 -0.1 1" dir="0 -1 -1" diffuse="1 1 1"/>
 	  -->
 
+
+		<!--
+        <geom name="plane" type="plane"  pos="0 0 -0.001" size="50 50 0.0001" material="floor_mat"/>
+		-->
+
 		<body childclass="arena" name="arena_base" pos="0 0 0">
 			<!--
 			<body name="minimal">
 			  <geom mesh="minimal" name="minimal" material="arena_mat"></geom>
 			</body>
 			-->
-          <body pos="-2.19 -0.1 -0.1">
+          <body name="floor" pos="-2.19 -0.1 -0.05">
              <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
+			 <body name="rock1" pos="0 0 0.2">
+				 <geom name="rock1" type="box" size="0.1 0.1 0.15" material="rock1_mat"/>
+			 </body>
+			 <body name="rock2" pos="0.5 0 0.2">
+				 <geom name="rock2" type="box" size="0.1 0.1 0.15" material="rock2_mat"/>
+			 </body>
+			 <body name="rock3" pos="-0.5 0 0.2">
+				 <geom name="rock3" type="box" size="0.1 0.1 0.15" material="rock3_mat"/>
+			 </body>
           </body>
-		  <body pos="-4.29 -0.1 0.45">
+		  <body name="left" pos="-4.29 -0.1 0.5">
              <geom name="left" type="box" size="0.05 3.69 0.55" material="left_mat"/>
           </body>
-		  <body pos="-0.1 -0.1 0.45">
+		  <body name="right" pos="-0.1 -0.1 0.5">
              <geom name="right" type="box" size="0.05 3.69 0.55" material="right_mat"/>
           </body>
-		  <body pos="-2.19 -3.79 0.45">
+		  <body name="bin" pos="-2.19 -3.79 0.5">
              <geom name="bin" type="box" size="2.09 0.05 0.55" material="bin_mat"/>
           </body>
-		  <body pos="-2.19 3.59 0.45">
+		  <body name="dig" pos="-2.19 3.59 0.5">
              <geom name="dig" type="box" size="2.09 0.05 0.55" material="dig_mat"/>
 		 </body>
 		</body>
 	</worldbody>
 </mujoco>
-
 
 
 <!--
