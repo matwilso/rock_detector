@@ -56,8 +56,7 @@ Range3D = namedtuple("Range3D", "x y z")
 
 
 #TODO: randomize the shape or size of the rocks
-# Looked it up, and the way to do it is just modify the xml file and reload.
-# not too bad
+# Alex Ray says there is a way to do it live
 
 # PARAMS TO RANDOMIZE
 
@@ -69,12 +68,6 @@ Range3D = namedtuple("Range3D", "x y z")
 # - xyz coordinate of rock within some xy range and always at some z height
 # - shape
 # - size
-
-#  camera
-# - easy camera modder
-
-# texture
-# - easy texture modder
 
 
 # TODO: need to think of some method for when to sample and randomize.  
@@ -166,10 +159,11 @@ light_ry = Range(biny, digy)
 light_rz = Range(afz, afz + zhigh)
 light_range3d = Range3D(light_rx, light_ry, light_rz)
 
-light_rroll = Range(-180, 180)
-light_rpitch = Range(-180, 180)
-light_ryaw = Range(-180, 180)
-light_angle3 = Range3D(light_rroll, light_rpitch, light_ryaw)
+#light_rroll = Range(-180, 180)
+#light_rpitch = Range(-180, 180)
+#light_ryaw = Range(-180, 180)
+#light_angle3 = Range3D(light_rroll, light_rpitch, light_ryaw)
+light_dir3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
 
 cam_rx = Range(acx - xoff, acx + xoff) # center of arena +/- 0.5
 cam_ry = Range(biny, biny+cam_ydelta)
@@ -177,7 +171,7 @@ cam_rz = Range(afz + zlow, afz + zhigh)
 cam_range3d = Range3D(cam_rx, cam_ry, cam_rz)
 
 cam_rroll = Range(-80, -100)
-cam_rpitch = Range(80, 90)
+cam_rpitch = Range(65, 95)
 cam_ryaw = Range(88, 92)
 cam_angle3 = Range3D(cam_rroll, cam_rpitch, cam_ryaw)
 cam_rfovy = Range(35, 55)
@@ -213,15 +207,26 @@ def mod_textures():
     tex_modder.randomize()
     tex_modder.rand_all('skybox')
 
+# too reflective
+#def mod_materials():
+#    for name in model.geom_names:
+#        mat_modder.rand_all(name)
+
 def mod_lights():
-    # TODO: - set direction
-    #       - set active
-    #       - set specular
-    #       - set ambient
-    #       - set diffuse
-    #       - set castshadow 
-    for name in sim.model.light_names:
+
+    for i, name in enumerate(sim.model.light_names):
+        # random sample 50% of any given light being on 
+        light_modder.set_active(name, random.uniform(0, 1) > 0.5)
+
+        # Pretty sure light_dir is just the xyz of a quat with w = 0.
+        # I random sample -1 to 1 for xyz, normalize the quat, and then set the tuple (xyz) as the dir
+        dir_xyz = np.quaternion(0, *sample_xyz(light_dir3)).normalized().components.tolist()[1:]
         light_modder.set_pos(name, sample_xyz(light_range3d))
+        light_modder.set_dir(name, dir_xyz)
+        light_modder.set_specular(name, sample_xyz(light_dir3))
+        light_modder.set_diffuse(name, sample_xyz(light_dir3))
+        # TODO: add marker for visualizing light
+        # TODO: also consider adding more lights and turning them on and off
 
 def mod_camera():
     """Randomize pos, direction, and fov of camera"""
@@ -237,6 +242,7 @@ model = load_model_from_path("xmls/nasa/box.xml")
 sim = MjSim(model)
 viewer = MjViewer(sim)
 tex_modder = TextureModder(sim)
+mat_modder = MaterialModder(sim)
 cam_modder = CameraModder(sim)
 light_modder = LightModder(sim)
 
@@ -251,8 +257,8 @@ while True:
     cam_img = sim.render(224, 224, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
     variance = sample(rvariance)
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=variance) * 255).astype(np.uint8)
-    plt.imshow(cam_img)
-    plt.show()
+    #plt.imshow(cam_img)
+    #plt.show()
 
     # TODO: - add some random noise (type and amount) 
 
@@ -266,8 +272,8 @@ while True:
     r2_diff = r2_pos - cam_pos
     r3_diff = r3_pos - cam_pos
     r1_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r1_diff[0], r1_diff[1], r1_diff[2])
-    r2_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r2_diff[0], r2_diff[1], r2_diff[2])
-    r3_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r3_diff[0], r3_diff[1], r3_diff[2])
+    #r2_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r2_diff[0], r2_diff[1], r2_diff[2])
+    #r3_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r3_diff[0], r3_diff[1], r3_diff[2])
 
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
@@ -276,6 +282,8 @@ while True:
     #viewer.add_marker(pos=r2_pos, label=r2_text)
     #viewer.add_marker(pos=r3_pos, label=r3_text)
     viewer.add_marker(pos=cam_pos, label="CAM: {}".format(rpy))
+
+
 
     viewer.render()
     t += 1

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mujoco model='nasa_geo'>
+	<visual>
+		makes it so the camera doesn't look through the floor
+		<map znear=0.01 />
+	</visual>
 	<asset>
 		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -40,13 +44,19 @@
 	3.78, 7.38
 
 	<worldbody>
-	  <light name="light1" diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="light2" diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="light3" diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="light4" diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="light5" diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
+	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 -0.1 3" dir="0 -1 -0.5"/>
+	  <light name="light2" diffuse="1.5 1.5 1.5" pos="-2.29 -3.0 3" dir="0 0 -1"/>
+	  <light name="light3" diffuse="1.5 1.5 1.5" pos="-2.29 -2.0 3" dir="0 0 -1"/>
+	  <light name="light4" diffuse="1.5 1.5 1.5" pos="-2.29 -1.0 3" dir="0 0 -1"/>
+	  <light name="light5" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light6" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light7" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light8" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light9" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light10" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 
-	  <camera name="camera1" pos="-2.29 -5.5 2.0" euler="80 0 0"/>
+	  <camera name="camera1" pos="-2.29 -4.0 2.0" euler="80 0 0"/>
+
 
 	  <!--
 	  <light name="light3" pos="-2.29 -0.1 1" dir="0 -1 -1" diffuse="1 1 1"/>
