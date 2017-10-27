@@ -22,6 +22,17 @@ from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureM
 import os
 
 # Define struct like objects
+# TODO: just make these into numpy arrays so ops are defined
+class Range(namedtuple('Range', 'min max')):
+    def __add__(self, other):
+        if isinstance(other, Range):
+            return Range(self.min + other.min, self.max + other.max)
+        else:
+            return Range(self.min + other, self.max + other)
+
+    def __mul__(self, other):
+        return Range(self.min * other, self.max * other)
+
 Range = namedtuple("Range", "min max")
 Range3D = namedtuple("Range3D", "x y z")
 
@@ -54,6 +65,10 @@ Range3D = namedtuple("Range3D", "x y z")
 #    loss.backward()
 #    optimizer.step()
 
+
+
+# What is going to be my network output and how am I going to compute a loss on it?
+# I am thinking x and y coordinates of rocks and their height above ground (z-height)
 
 #TODO: randomize the shape or size of the rocks
 # Alex says there is a way to do it live
@@ -107,10 +122,6 @@ Range3D = namedtuple("Range3D", "x y z")
 # TODO: consider switching to ResNet-50 because it is faster and better (jcjohnson)
 # then I gotta figure out where to stick the regression head
 
-#matmodder = MaterialModder(sim)
-#for name in sim.model.geom_names:
-#    matmodder.rand_all(name)
-
 # TODO: find a bunch of rock stls on the internet: https://free3d.com/3d-models/rock
 
 # TODO: add some distractor objects, like smaller rocks.  And just the bigger 
@@ -131,19 +142,19 @@ rightx = -0.1
 biny = -3.79
 digy = 3.59
 afz = 0.0
-zlow = 0.2
+zlow = 0.3
 zhigh = 1.0
 
 sz_len = 1.5
 obs_len = 2.94
 dig_len = 2.94
 sz_endy = biny + sz_len # start zone end
-cam_ydelta = 0.75 
+cam_ydelta = 1.5 
 obs_sy = sz_endy
 obs_endy = obs_sy + obs_len
 
 rock_rx = Range(acx, acx) 
-rock_ry = Range(obs_sy, obs_endy)
+rock_ry = Range(obs_sy+1.0, obs_endy)
 rock_rz = Range(afz, afz)
 rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
 
@@ -152,21 +163,16 @@ light_ry = Range(biny, digy)
 light_rz = Range(afz, afz + zhigh)
 light_range3d = Range3D(light_rx, light_ry, light_rz)
 
-#light_rroll = Range(-180, 180)
-#light_rpitch = Range(-180, 180)
-#light_ryaw = Range(-180, 180)
-#light_angle3 = Range3D(light_rroll, light_rpitch, light_ryaw)
-
 light_dir3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
 
 cam_rx = Range(acx - xoff, acx + xoff) # center of arena +/- 0.5
-cam_ry = Range(biny, biny+cam_ydelta)
+cam_ry = Range(biny+0.2, sz_endy)
 cam_rz = Range(afz + zlow, afz + zhigh)
 cam_range3d = Range3D(cam_rx, cam_ry, cam_rz)
 
-cam_rroll = Range(-80, -100)
-cam_rpitch = Range(65, 95)
-cam_ryaw = Range(88, 92)
+cam_rroll = Range(-85, -95) # think this might actually be yaw
+cam_rpitch = Range(65, 90)
+cam_ryaw = Range(88, 92) # this might actually be pitch, based on coordinate frames
 cam_angle3 = Range3D(cam_rroll, cam_rpitch, cam_ryaw)
 cam_rfovy = Range(35, 55)
 
@@ -187,7 +193,6 @@ def sample_xyz(range3d):
     z = sample(range3d.z)
     return (x, y, z)
 
-
 def sample_quat(angle3):
     roll = sample(angle3.x) * np.pi / 180
     pitch = sample(angle3.y) * np.pi / 180
@@ -200,11 +205,6 @@ def mod_textures():
     """Randomize all the textures in the scene, including the skybox"""
     tex_modder.randomize()
     tex_modder.rand_all('skybox')
-
-# too reflective
-#def mod_materials():
-#    for name in model.geom_names:
-#        mat_modder.rand_all(name)
 
 def mod_lights():
     """Randomize pos, direction, and lights"""
@@ -241,22 +241,23 @@ rto3d = lambda r : Range3D(*((r,)*3))
 
 rock_r1dim = Range(0.05, 0.2)
 rock_size_range = rto3d(rock_r1dim)
-rock_rtypes = Range(2, 7)
+rock_rtypes = Range(3, 7+1) 
+rock_mesh_scaleup = 100
 
 #rock_rx = Range(acx, acx) 
 #rock_ry = Range(obs_sy, obs_endy)
 #rock_rz = Range(afz, afz)
 #rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
 
-
 #<body name="floor" pos="-2.19 -0.1 -0.05">
 
-rock_ry = Range(obs_sy+0.75, obs_endy)
+rock_ry = Range(obs_sy + 1.5, obs_endy)
 
-rock_lanex = 0.3
+rock_lanex = 0.4
+outer_extra = 0.5
 rock_buffx = 0.2
 
-left_rx = Range(-3*rock_lanex, -rock_lanex-rock_buffx)
+left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
 left_rz = Range(afz, afz)
 left_rock_range = Range3D(left_rx, rock_ry, left_rz)
 
@@ -264,24 +265,55 @@ mid_rx = Range(-rock_lanex, rock_lanex)
 mid_rz = Range(afz, afz)
 mid_rock_range = Range3D(mid_rx, rock_ry, mid_rz)
 
-right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex)
+right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
 right_rz = Range(afz, afz)
 right_rock_range = Range3D(right_rx, rock_ry, right_rz)
 
+rocks_active = {}
 
 def mod_rocks():
-    model.body_pos[model.body_name2id("rock1")] = np.array(sample_xyz(left_rock_range))
-    model.body_pos[model.body_name2id("rock2")] = np.array(sample_xyz(mid_rock_range))
-    model.body_pos[model.body_name2id("rock3")] = np.array(sample_xyz(right_rock_range))
-
+    rock_body_ids = []
+    rock_geom_ids = []
     for name in model.geom_names:
         if name[:4] != "rock":
             continue 
         
         geom_id = model.geom_name2id(name)
+        body_id = model.body_name2id(name)
+        rock_geom_ids.append(geom_id)
+        rock_body_ids.append(body_id)
 
-        model.geom_type[geom_id] = sample(rock_rtypes, as_int=True)
+
+        geom_type =  sample(rock_rtypes, as_int=True)
+        model.geom_type[geom_id] = geom_type       
         model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range))
+
+#        if geom_type == 7:
+#            this_rock_range = 
+#        model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scaleup))
+#
+        if random.uniform(0, 1) < 0.05:
+            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
+            rocks_active[name] = False
+        else:
+            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
+            rocks_active[name] = True
+
+        model.body_quat[body_id] = random_quat()
+
+    #random.shuffle(rock_body_ids)
+    model.body_pos[rock_body_ids[0]] = np.array(sample_xyz(left_rock_range))
+    model.body_pos[rock_body_ids[1]] = np.array(sample_xyz(mid_rock_range))
+    model.body_pos[rock_body_ids[2]] = np.array(sample_xyz(right_rock_range))
+    #print("1", model.geom_type[rock_geom_ids[0]])
+    #print("2", model.geom_type[rock_geom_ids[1]])
+    #print("3", model.geom_type[rock_geom_ids[2]])
+
+
+
+def random_quat():
+    quat_random = np.quaternion(*(np.random.randn(4))).normalized()
+    return quat_random.components
 
 def jitter_quat(quat, amount):
     jitter = amount * np.random.randn(4)
@@ -289,6 +321,7 @@ def jitter_quat(quat, amount):
     return quat_jittered.components
 
 def mod_arena():
+    return
     for name in model.geom_names:
         if name[-4:] != "wall":
             continue 
@@ -309,7 +342,6 @@ model = load_model_from_path("xmls/nasa/box.xml")
 sim = MjSim(model)
 viewer = MjViewer(sim)
 tex_modder = TextureModder(sim)
-mat_modder = MaterialModder(sim)
 cam_modder = CameraModder(sim)
 light_modder = LightModder(sim)
 
@@ -348,11 +380,10 @@ while True:
 
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
-
     #viewer.add_marker(pos=r1_pos, label=r1_text)
     #viewer.add_marker(pos=r2_pos, label=r2_text)
     #viewer.add_marker(pos=r3_pos, label=r3_text)
-    viewer.add_marker(pos=cam_pos, label="CAM: {}".format(rpy))
+    viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
 
     viewer.render()
     t += 1
