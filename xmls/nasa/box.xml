@@ -2,7 +2,7 @@
 <mujoco model='nasa_geo'>
 	<visual>
 		makes it so the camera doesn't look through the floor
-		<map znear=0.01 />
+		<map znear=0.0001 />
 	</visual>
 	<asset>
 		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -44,6 +44,7 @@
 	3.78, 7.38
 
 	<worldbody>
+	  arbitrary shitton of lights
 	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 -0.1 3" dir="0 -1 -0.5"/>
 	  <light name="light2" diffuse="1.5 1.5 1.5" pos="-2.29 -3.0 3" dir="0 0 -1"/>
 	  <light name="light3" diffuse="1.5 1.5 1.5" pos="-2.29 -2.0 3" dir="0 0 -1"/>
@@ -54,6 +55,11 @@
 	  <light name="light8" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light9" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light10" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light11" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light12" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light13" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light14" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light15" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 
 	  <camera name="camera1" pos="-2.29 -4.0 2.0" euler="80 0 0"/>
 
@@ -74,28 +80,32 @@
 			</body>
 			-->
           <body name="floor" pos="-2.19 -0.1 -0.05">
+             <geom name="floor" type="box" size="50.0 50.0 0.05" material="floor_mat"/>
+			 <!--
              <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
-			 <body name="rock1" pos="0 0 0.2">
-				 <geom name="rock1" type="box" size="0.1 0.1 0.15" material="rock1_mat"/>
-			 </body>
-			 <body name="rock2" pos="0.5 0 0.2">
-				 <geom name="rock2" type="box" size="0.1 0.1 0.15" material="rock2_mat"/>
-			 </body>
-			 <body name="rock3" pos="-0.5 0 0.2">
+			 -->
+
+			 <body name="rock1" pos="-0.5 0 0.2">
 				 <geom name="rock3" type="box" size="0.1 0.1 0.15" material="rock3_mat"/>
 			 </body>
+			 <body name="rock2" pos="0 0 0.2">
+				 <geom name="rock1" type="box" size="0.1 0.1 0.15" material="rock1_mat"/>
+			 </body>
+			 <body name="rock3" pos="0.5 0 0.2">
+				 <geom name="rock2" type="box" size="0.1 0.1 0.15" material="rock2_mat"/>
+			 </body>
           </body>
-		  <body name="left" pos="-4.29 -0.1 0.5">
-             <geom name="left" type="box" size="0.05 3.69 0.55" material="left_mat"/>
+		  <body name="left_wall" pos="-4.29 -0.1 0.6">
+             <geom name="left_wall" type="box" size="0.05 3.69 0.65" material="left_mat"/>
           </body>
-		  <body name="right" pos="-0.1 -0.1 0.5">
-             <geom name="right" type="box" size="0.05 3.69 0.55" material="right_mat"/>
+		  <body name="right_wall" pos="-0.1 -0.1 0.6">
+             <geom name="right_wall" type="box" size="0.05 3.69 0.65" material="right_mat"/>
           </body>
-		  <body name="bin" pos="-2.19 -3.79 0.5">
-             <geom name="bin" type="box" size="2.09 0.05 0.55" material="bin_mat"/>
+		  <body name="bin_wall" pos="-2.19 -3.79 0.6">
+             <geom name="bin_wall" type="box" size="2.09 0.05 0.65" material="bin_mat"/>
           </body>
-		  <body name="dig" pos="-2.19 3.59 0.5">
-             <geom name="dig" type="box" size="2.09 0.05 0.55" material="dig_mat"/>
+		  <body name="dig_wall" pos="-2.19 3.59 0.6">
+             <geom name="dig_wall" type="box" size="2.09 0.05 0.65" material="dig_mat"/>
 		 </body>
 		</body>
 	</worldbody>

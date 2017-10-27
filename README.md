@@ -2,6 +2,12 @@
 [in progress]<br>
 Domain randomization to train a convolutional nerual net (ResNet) rock detector for NASA Robotic Mining Competition
 
+
+Initial demo randomization (still need to get the rocks better)
+
+![alt text](/assets/demo.png)
+
+
 rock detector. exciting uh?
 
 

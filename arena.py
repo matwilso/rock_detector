@@ -56,7 +56,10 @@ Range3D = namedtuple("Range3D", "x y z")
 
 
 #TODO: randomize the shape or size of the rocks
-# Alex Ray says there is a way to do it live
+# Alex says there is a way to do it live
+# I should also modify the height of the competition arena walls from like
+# 0 to what I think would be their max height. This can be done live in 
+# some way similar to the CameraModder
 
 # PARAMS TO RANDOMIZE
 
@@ -108,22 +111,15 @@ Range3D = namedtuple("Range3D", "x y z")
 #for name in sim.model.geom_names:
 #    matmodder.rand_all(name)
 
-
-# TODO: set these to actual from xml file
-# farthest back camera should be is camera y = [-2.00, 6.00]
-
-
-# TODO: need to get the ranges to randomize for the camera
-# one issue that I have is what if the rock goes out of the frame.  Would that mess
-# things up if we try to backprop on something we can't see?  I guess just limit it
-# to a range where this near or strictly impossible.
-
-
 # TODO: find a bunch of rock stls on the internet: https://free3d.com/3d-models/rock
 
-# 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
-# could be about 2 days for full convergence
+# TODO: add some distractor objects, like smaller rocks.  And just the bigger 
+# rocks are the only thing that matters
 
+# TODO: gonna need a lot of finetuning and making sure things are good before I train 
+
+# NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
+# could be about 2 days for full convergence
 
 # x is left and right
 # y is back and forth
@@ -146,13 +142,10 @@ cam_ydelta = 0.75
 obs_sy = sz_endy
 obs_endy = obs_sy + obs_len
 
-
-# These need to be placed into the xml
 rock_rx = Range(acx, acx) 
 rock_ry = Range(obs_sy, obs_endy)
 rock_rz = Range(afz, afz)
 rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
-
 
 light_rx = Range(leftx, rightx) 
 light_ry = Range(biny, digy)
@@ -163,6 +156,7 @@ light_range3d = Range3D(light_rx, light_ry, light_rz)
 #light_rpitch = Range(-180, 180)
 #light_ryaw = Range(-180, 180)
 #light_angle3 = Range3D(light_rroll, light_rpitch, light_ryaw)
+
 light_dir3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
 
 cam_rx = Range(acx - xoff, acx + xoff) # center of arena +/- 0.5
@@ -213,7 +207,7 @@ def mod_textures():
 #        mat_modder.rand_all(name)
 
 def mod_lights():
-
+    """Randomize pos, direction, and lights"""
     for i, name in enumerate(sim.model.light_names):
         # random sample 50% of any given light being on 
         light_modder.set_active(name, random.uniform(0, 1) > 0.5)
@@ -238,6 +232,79 @@ def mod_camera():
     cam_modder.set_fovy('camera1', fovy)
 
 
+
+# Range to a tripled Range3D 
+rto3d = lambda r : Range3D(*((r,)*3))
+
+# TODO: add 3 more rocks maybe that are from meshses. else later try to 
+# be able to change something to a mesh
+
+rock_r1dim = Range(0.05, 0.2)
+rock_size_range = rto3d(rock_r1dim)
+rock_rtypes = Range(2, 7)
+
+#rock_rx = Range(acx, acx) 
+#rock_ry = Range(obs_sy, obs_endy)
+#rock_rz = Range(afz, afz)
+#rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
+
+
+#<body name="floor" pos="-2.19 -0.1 -0.05">
+
+rock_ry = Range(obs_sy+0.75, obs_endy)
+
+rock_lanex = 0.3
+rock_buffx = 0.2
+
+left_rx = Range(-3*rock_lanex, -rock_lanex-rock_buffx)
+left_rz = Range(afz, afz)
+left_rock_range = Range3D(left_rx, rock_ry, left_rz)
+
+mid_rx = Range(-rock_lanex, rock_lanex)
+mid_rz = Range(afz, afz)
+mid_rock_range = Range3D(mid_rx, rock_ry, mid_rz)
+
+right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex)
+right_rz = Range(afz, afz)
+right_rock_range = Range3D(right_rx, rock_ry, right_rz)
+
+
+def mod_rocks():
+    model.body_pos[model.body_name2id("rock1")] = np.array(sample_xyz(left_rock_range))
+    model.body_pos[model.body_name2id("rock2")] = np.array(sample_xyz(mid_rock_range))
+    model.body_pos[model.body_name2id("rock3")] = np.array(sample_xyz(right_rock_range))
+
+    for name in model.geom_names:
+        if name[:4] != "rock":
+            continue 
+        
+        geom_id = model.geom_name2id(name)
+
+        model.geom_type[geom_id] = sample(rock_rtypes, as_int=True)
+        model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range))
+
+def jitter_quat(quat, amount):
+    jitter = amount * np.random.randn(4)
+    quat_jittered = np.quaternion(*(quat + jitter)).normalized()
+    return quat_jittered.components
+
+def mod_arena():
+    for name in model.geom_names:
+        if name[-4:] != "wall":
+            continue 
+
+        geom_id = model.geom_name2id(name)
+        body_id = model.body_name2id(name)
+
+        jitter_x = Range(-0.2, 0.2)
+        jitter_y = Range(-0.2, 0.2)
+        jitter_z = Range(-2.0, 0.0)
+        jitter3D = Range3D(jitter_x, jitter_y, jitter_z)
+
+        model.body_pos[body_id] = start_body_pos[body_id] + sample_xyz(jitter3D)
+        model.body_quat[body_id] = jitter_quat(model.body_quat[body_id], 0.001)
+
+
 model = load_model_from_path("xmls/nasa/box.xml")
 sim = MjSim(model)
 viewer = MjViewer(sim)
@@ -246,11 +313,17 @@ mat_modder = MaterialModder(sim)
 cam_modder = CameraModder(sim)
 light_modder = LightModder(sim)
 
+start_geo_size = model.geom_size.copy()
+start_body_pos = model.body_pos.copy()
+start_body_quat = model.body_quat.copy()
+
 t = 0
 while True:
     mod_textures()
     mod_lights()
     mod_camera()
+    mod_rocks()
+    mod_arena()
     sim.step()  # NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK 
 
     #
@@ -259,8 +332,6 @@ while True:
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=variance) * 255).astype(np.uint8)
     #plt.imshow(cam_img)
     #plt.show()
-
-    # TODO: - add some random noise (type and amount) 
 
     floor_offset = model.body_pos[model.body_name2id('floor')]
     r1_pos = floor_offset + model.body_pos[model.body_name2id('rock1')]
@@ -278,14 +349,19 @@ while True:
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
 
-    viewer.add_marker(pos=r1_pos, label=r1_text)
+    #viewer.add_marker(pos=r1_pos, label=r1_text)
     #viewer.add_marker(pos=r2_pos, label=r2_text)
     #viewer.add_marker(pos=r3_pos, label=r3_text)
     viewer.add_marker(pos=cam_pos, label="CAM: {}".format(rpy))
-
-
 
     viewer.render()
     t += 1
     if t > 100 and os.getenv('TESTING') is not None:
         break
+
+
+# TODO: set the arena center bin is 0,0
+
+# NOTES (for PR):
+# could have a jitter method where it just moves a bit from the current location (pass in jitter)
+
