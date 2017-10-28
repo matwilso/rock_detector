@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# BOOKMARK
+# (1) need to get height of meshes and (2) need to figure out rock randomization blender maybe
+
+
 from collections import namedtuple
 import random
 import numpy as np
@@ -21,14 +26,7 @@ from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
 import os
 
-def Range(min, max):
-    return np.array([min, max])
 
-def Range3D(x, y, z):
-    return np.array([x,y,z])
-
-def rto3d(r):
-    return Range3D(r, r, r)
 
 #model = load_model_from_path("xmls/nasa/minimal.xml")
 
@@ -125,6 +123,19 @@ def rto3d(r):
 # NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
 # could be about 2 days for full convergence
 
+
+
+# OBJECT TYPE THINGS
+def Range(min, max):
+    return np.array([min, max])
+
+def Range3D(x, y, z):
+    return np.array([x,y,z])
+
+def rto3d(r):
+    return Range3D(r, r, r)
+
+
 # x is left and right
 # y is back and forth
 # TODO: refactor these
@@ -169,8 +180,39 @@ cam_ryaw = Range(88, 92) # this might actually be pitch, based on coordinate fra
 cam_angle3 = Range3D(cam_rroll, cam_rpitch, cam_ryaw)
 cam_rfovy = Range(35, 55)
 
-rvariance = Range(0.0, 0.0001)
+image_noise_rvariance = Range(0.0, 0.0001)
 
+# Rock placement range parameters
+rock_lanex = 0.4  # width parameters of x range
+outer_extra = 0.5 # how much farther rocks should go out on the right and left lanes
+rock_buffx = 0.2  # distacne between rock lanes
+
+# How far into the obstacle zone the rocks should start.  Generally at the comp
+# I don't think they start till about 1.5m, just by eyeballing it
+rock_start_offset = 1.5  
+
+rock_ry = Range(obs_sy + rock_start_offset, obs_endy)
+rock_rz = Range(afz, afz + 0.2)
+
+# Position dependent ranges
+left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
+mid_rx = Range(-rock_lanex, rock_lanex)
+right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
+# Form full 3D sample range
+left_rock_range = Range3D(left_rx, rock_ry, rock_rz)
+mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
+right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
+rock_ranges = [left_rock_range, mid_rock_range, right_rock_range]
+
+# Rock size, mesh scaling, type, and visibility
+rock_r1dim = Range(0.05, 0.2)  # how large 1 dim of the rock is
+rock_size_range = rto3d(rock_r1dim) #
+rock_rtypes = Range(7, 7+1)   # can sample 3 to 8 for different geom shapes
+rock_mesh_scale = 1  # how much we need to scale rock meshes compared to the default geoms
+rocks_active = {} # which of the rocks are currently visible (will be used for training)
+
+
+# UTILS
 
 def sample(num_range, as_int=False):
     """Sample a float in the num_range"""
@@ -181,19 +223,33 @@ def sample(num_range, as_int=False):
         return samp
 
 def sample_xyz(range3d):
-    #print(range3d)
+    """Sample 3 floats in the 3 num_ranges"""
     x = sample(range3d[0])
     y = sample(range3d[1])
     z = sample(range3d[2])
     return (x, y, z)
 
 def sample_quat(angle3):
+    """Sample a quaterion from a range of euler angles in degrees"""
     roll = sample(angle3[0]) * np.pi / 180
     pitch = sample(angle3[1]) * np.pi / 180
     yaw = sample(angle3[2]) * np.pi / 180
 
     quat = quaternion.from_euler_angles(roll, pitch, yaw)
     return quat.normalized().components
+
+def random_quat():
+    """Sample a completely random quaternion"""
+    quat_random = np.quaternion(*(np.random.randn(4))).normalized()
+    return quat_random.components
+
+def jitter_quat(quat, amount):
+    """Jitter a given quaternion by amount"""
+    jitter = amount * np.random.randn(4)
+    quat_jittered = np.quaternion(*(quat + jitter)).normalized()
+    return quat_jittered.components
+
+# MODDERS
 
 def mod_textures():
     """Randomize all the textures in the scene, including the skybox"""
@@ -213,8 +269,6 @@ def mod_lights():
         light_modder.set_dir(name, dir_xyz)
         light_modder.set_specular(name, sample_xyz(light_dir3))
         light_modder.set_diffuse(name, sample_xyz(light_dir3))
-        # TODO: add marker for visualizing light
-        # TODO: also consider adding more lights and turning them on and off
 
 def mod_camera():
     """Randomize pos, direction, and fov of camera"""
@@ -225,134 +279,15 @@ def mod_camera():
     fovy = sample(cam_rfovy)
     cam_modder.set_fovy('camera1', fovy)
 
-
-# TODO: add 3 more rocks maybe that are from meshses. else later try to 
-# be able to change something to a mesh
-
-rock_r1dim = Range(0.05, 0.2)
-rock_size_range = rto3d(rock_r1dim)
-rock_rtypes = Range(7, 7+1) 
-rock_mesh_scaleup = 1 
-
-#rock_rx = Range(acx, acx) 
-#rock_ry = Range(obs_sy, obs_endy)
-#rock_rz = Range(afz, afz)
-#rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
-
-#<body name="floor" pos="-2.19 -0.1 -0.05">
-
-rock_ry = Range(obs_sy + 1.5, obs_endy)
-rock_rz = Range(afz, afz + 0.2)
-
-rock_lanex = 0.4
-outer_extra = 0.5
-rock_buffx = 0.2
-
-left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
-left_rock_range = Range3D(left_rx, rock_ry, rock_rz)
-
-mid_rx = Range(-rock_lanex, rock_lanex)
-mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
-
-right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
-right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
-
-rocks_active = {}
-
-# TODO: try full method where we get rot of whole mesh and max method where we
-# just get maxs and hopefully they stay the maxs or close enough
-
-def mod_rocks():
-    rock_body_ids = []
-    rock_geom_ids = []
-    rock_mesh_ids = []
-    for name in model.geom_names:
-        if name[:4] != "rock":
-            continue 
-        
-        geom_id = model.geom_name2id(name)
-        body_id = model.body_name2id(name)
-        mesh_id = model.geom_dataid[geom_id]
-        rock_geom_ids.append(geom_id)
-        rock_body_ids.append(body_id)
-        rock_mesh_ids.append(mesh_id)
-
-        geom_type =  sample(rock_rtypes, as_int=True)
-        model.geom_type[geom_id] = geom_type       
-        model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range))
-
-        this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scaleup
-        model.geom_size[geom_id] = sample_xyz(this_range)
-
-
-        if random.uniform(0, 1) < 0.05:
-            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
-            rocks_active[name] = False
-        else:
-            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
-            rocks_active[name] = True
-
-        rot_quat = random_quat()
-        model.body_quat[body_id] = rot_quat  
-
-        vert_adr = model.mesh_vertadr[mesh_id]
-        vert_num = model.mesh_vertnum[mesh_id]
-        mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
-        #print(mesh_verts.shape)
-
-        rots = quaternion.rotate_vectors(np.quaternion(*rot_quat), mesh_verts)
-        #r3z = np.max(model.mesh_vert[verts[r3_meshid]:, 2])
-        if name ==  "rock1":
-            max_val = np.max(rots[:,2])
-
-
-    vert_shape = model.mesh_vert.shape
-    model.mesh_vertadr
-
-    #random.shuffle(rock_body_ids
-
-    model.body_pos[rock_body_ids[0]] = np.array(sample_xyz(left_rock_range))
-    print(max_val + model.body_pos[rock_body_ids[0]][2])
-    model.body_pos[rock_body_ids[1]] = np.array(sample_xyz(mid_rock_range))
-    model.body_pos[rock_body_ids[2]] = np.array(sample_xyz(right_rock_range))
-    #print("1", model.geom_type[rock_geom_ids[0]])
-    #print("2", model.geom_type[rock_geom_ids[1]])
-    #print("3", model.geom_type[rock_geom_ids[2]])
-
-
-    # 2. body pos gives height (we are randomizing that above), but if the mesh is rotated,
-    # the axis matters for how tall the object will be out of the ground
-    # So what to do?
-
-    #for i in range(3):
-    #i = 0
-    #bi = rock_body_ids[i]
-    #gi = rock_geom_ids[i]
-    #print("body: ", model.body_pos[bi])
-
-    # 1. Mesh and mesh vert does not work
-    #r1_meshid = rock_mesh_ids[0]
-    #r2_meshid = rock_mesh_ids[1]
-    #r3_meshid = rock_mesh_ids[2]
-    #verts = model.mesh_vertadr
-    #print(verts[r1_meshid])
-    #r1z = np.max(model.mesh_vert[verts[r1_meshid]:verts[r2_meshid], 2])
-    #r2z = np.max(model.mesh_vert[verts[r2_meshid]:verts[r3_meshid], 2])
-    #r3z = np.max(model.mesh_vert[verts[r3_meshid]:, 2])
-    #print(r1z, r2z, r3z)
-
-
-def random_quat():
-    quat_random = np.quaternion(*(np.random.randn(4))).normalized()
-    return quat_random.components
-
-def jitter_quat(quat, amount):
-    jitter = amount * np.random.randn(4)
-    quat_jittered = np.quaternion(*(quat + jitter)).normalized()
-    return quat_jittered.components
-
 def mod_arena():
-    return
+    """
+    Randomize the x, y, and orientation of the walls slights.
+    Also drastically randomize the height of the walls, in many cases they won't
+    be seen at all. This will allow the model to generalize to scenarios without
+    walls, or where the walls and geometry is slightly different than the sim 
+    model
+    """
+
     for name in model.geom_names:
         if name[-4:] != "wall":
             continue 
@@ -369,6 +304,74 @@ def mod_arena():
         model.body_quat[body_id] = jitter_quat(model.body_quat[body_id], 0.001)
 
 
+
+
+def mod_rocks():
+    """
+    Randomize the rocks so that the model will generalize to competition rocks
+    This involves:
+        - Random positions
+        - Random orientations
+        - Rotating positions of meshes
+        - [TODO]:  completely randomizing the meshes every n runs (e.g., with blender)
+    """
+    rock_body_ids = {}
+    rock_geom_ids = {}
+    rock_mesh_ids = {}
+    max_heights = {} 
+
+    for name in model.geom_names:
+        if name[:4] != "rock":
+            continue 
+        
+        geom_id = model.geom_name2id(name)
+        body_id = model.body_name2id(name)
+        mesh_id = model.geom_dataid[geom_id]
+        rock_geom_ids[name] = geom_id
+        rock_body_ids[name] = body_id
+        rock_mesh_ids[name] = mesh_id
+
+        geom_type =  sample(rock_rtypes, as_int=True)
+        model.geom_type[geom_id] = geom_type       
+
+        this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
+        model.geom_size[geom_id] = sample_xyz(this_range)
+
+
+        if random.uniform(0, 1) < 0.05:
+            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
+            rocks_active[name] = False
+        else:
+            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
+            rocks_active[name] = True
+
+        rot_quat = random_quat()
+
+        # Rotate the rock and get  z value of the highest point in the rotated rock mesh
+        vert_adr = model.mesh_vertadr[mesh_id]
+        vert_num = model.mesh_vertnum[mesh_id]
+        mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
+        rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
+        model.geom_quat[geom_id] = rot_quat  
+        max_height = np.max(rots[:,2])
+        max_heights[name] = max_height
+
+    # Randomize the positions of the rocks. Since the rock1 mesh is always the 
+    # same we want to cycle it through to every position, etc.
+    shuffle_ids = [keyval[1] for keyval in rock_body_ids.items()]
+    random.shuffle(shuffle_ids)
+    for i in range(len(shuffle_ids)):
+        model.body_pos[shuffle_ids[i]] = np.array(sample_xyz(rock_ranges[i]))
+
+
+    # Set max height to max z of mesh + body_pos z value (because this is jittered)
+    for name in max_heights.keys():
+        max_heights[name] += model.body_pos[rock_body_ids[name]][2]
+
+    return max_heights
+
+
+
 model = load_model_from_path("xmls/nasa/box.xml")
 sim = MjSim(model)
 viewer = MjViewer(sim)
@@ -376,23 +379,28 @@ tex_modder = TextureModder(sim)
 cam_modder = CameraModder(sim)
 light_modder = LightModder(sim)
 
+# Get start state of params to slightlt jitter later
 start_geo_size = model.geom_size.copy()
 start_body_pos = model.body_pos.copy()
 start_body_quat = model.body_quat.copy()
 
 t = 0
 while True:
+
+    # Randomize (mod) all relevant parameters
     mod_textures()
     mod_lights()
     mod_camera()
-    mod_rocks()
+    max_heights = mod_rocks()
     mod_arena()
     sim.step()  # NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK 
 
-    #
+
+    # Grab an image from the camera at (224, 244, 3) to feed into CNN
     cam_img = sim.render(224, 224, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
-    variance = sample(rvariance)
-    cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=variance) * 255).astype(np.uint8)
+    image_noise_variance = sample(image_noise_rvariance) 
+    cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
+
     #plt.imshow(cam_img)
     #plt.show()
 
@@ -405,13 +413,13 @@ while True:
     r1_diff = r1_pos - cam_pos
     r2_diff = r2_pos - cam_pos
     r3_diff = r3_pos - cam_pos
-    r1_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r1_diff[0], r1_diff[1], r1_diff[2])
+    r1_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r1_diff[0], r1_diff[1], max_heights["rock1"])
     #r2_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r2_diff[0], r2_diff[1], r2_diff[2])
     #r3_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r3_diff[0], r3_diff[1], r3_diff[2])
 
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
-    #viewer.add_marker(pos=r1_pos, label=r1_text)
+    viewer.add_marker(pos=r1_pos, label=r1_text)
     #viewer.add_marker(pos=r2_pos, label=r2_text)
     #viewer.add_marker(pos=r3_pos, label=r3_text)
     viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
