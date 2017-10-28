@@ -21,21 +21,14 @@ from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
 import os
 
-# Define struct like objects
-# TODO: just make these into numpy arrays so ops are defined
-class Range(namedtuple('Range', 'min max')):
-    def __add__(self, other):
-        if isinstance(other, Range):
-            return Range(self.min + other.min, self.max + other.max)
-        else:
-            return Range(self.min + other, self.max + other)
+def Range(min, max):
+    return np.array([min, max])
 
-    def __mul__(self, other):
-        return Range(self.min * other, self.max * other)
+def Range3D(x, y, z):
+    return np.array([x,y,z])
 
-Range = namedtuple("Range", "min max")
-Range3D = namedtuple("Range3D", "x y z")
-
+def rto3d(r):
+    return Range3D(r, r, r)
 
 #model = load_model_from_path("xmls/nasa/minimal.xml")
 
@@ -181,22 +174,23 @@ rvariance = Range(0.0, 0.0001)
 
 def sample(num_range, as_int=False):
     """Sample a float in the num_range"""
-    samp = random.uniform(num_range.max, num_range.min)
+    samp = random.uniform(num_range[0], num_range[1])
     if as_int:
         return int(samp)
     else:
         return samp
 
 def sample_xyz(range3d):
-    x = sample(range3d.x)
-    y = sample(range3d.y)
-    z = sample(range3d.z)
+    #print(range3d)
+    x = sample(range3d[0])
+    y = sample(range3d[1])
+    z = sample(range3d[2])
     return (x, y, z)
 
 def sample_quat(angle3):
-    roll = sample(angle3.x) * np.pi / 180
-    pitch = sample(angle3.y) * np.pi / 180
-    yaw = sample(angle3.z) * np.pi / 180
+    roll = sample(angle3[0]) * np.pi / 180
+    pitch = sample(angle3[1]) * np.pi / 180
+    yaw = sample(angle3[2]) * np.pi / 180
 
     quat = quaternion.from_euler_angles(roll, pitch, yaw)
     return quat.normalized().components
@@ -232,17 +226,13 @@ def mod_camera():
     cam_modder.set_fovy('camera1', fovy)
 
 
-
-# Range to a tripled Range3D 
-rto3d = lambda r : Range3D(*((r,)*3))
-
 # TODO: add 3 more rocks maybe that are from meshses. else later try to 
 # be able to change something to a mesh
 
 rock_r1dim = Range(0.05, 0.2)
 rock_size_range = rto3d(rock_r1dim)
-rock_rtypes = Range(3, 7+1) 
-rock_mesh_scaleup = 100
+rock_rtypes = Range(7, 7+1) 
+rock_mesh_scaleup = 1 
 
 #rock_rx = Range(acx, acx) 
 #rock_ry = Range(obs_sy, obs_endy)
@@ -252,46 +242,49 @@ rock_mesh_scaleup = 100
 #<body name="floor" pos="-2.19 -0.1 -0.05">
 
 rock_ry = Range(obs_sy + 1.5, obs_endy)
+rock_rz = Range(afz, afz + 0.2)
 
 rock_lanex = 0.4
 outer_extra = 0.5
 rock_buffx = 0.2
 
 left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
-left_rz = Range(afz, afz)
-left_rock_range = Range3D(left_rx, rock_ry, left_rz)
+left_rock_range = Range3D(left_rx, rock_ry, rock_rz)
 
 mid_rx = Range(-rock_lanex, rock_lanex)
-mid_rz = Range(afz, afz)
-mid_rock_range = Range3D(mid_rx, rock_ry, mid_rz)
+mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
 
 right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
-right_rz = Range(afz, afz)
-right_rock_range = Range3D(right_rx, rock_ry, right_rz)
+right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
 
 rocks_active = {}
+
+# TODO: try full method where we get rot of whole mesh and max method where we
+# just get maxs and hopefully they stay the maxs or close enough
 
 def mod_rocks():
     rock_body_ids = []
     rock_geom_ids = []
+    rock_mesh_ids = []
     for name in model.geom_names:
         if name[:4] != "rock":
             continue 
         
         geom_id = model.geom_name2id(name)
         body_id = model.body_name2id(name)
+        mesh_id = model.geom_dataid[geom_id]
         rock_geom_ids.append(geom_id)
         rock_body_ids.append(body_id)
-
+        rock_mesh_ids.append(mesh_id)
 
         geom_type =  sample(rock_rtypes, as_int=True)
         model.geom_type[geom_id] = geom_type       
         model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range))
 
-#        if geom_type == 7:
-#            this_rock_range = 
-#        model.geom_size[geom_id] = np.array(sample_xyz(rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scaleup))
-#
+        this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scaleup
+        model.geom_size[geom_id] = sample_xyz(this_range)
+
+
         if random.uniform(0, 1) < 0.05:
             #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
             rocks_active[name] = False
@@ -299,16 +292,54 @@ def mod_rocks():
             #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
             rocks_active[name] = True
 
-        model.body_quat[body_id] = random_quat()
+        rot_quat = random_quat()
+        model.body_quat[body_id] = rot_quat  
 
-    #random.shuffle(rock_body_ids)
+        vert_adr = model.mesh_vertadr[mesh_id]
+        vert_num = model.mesh_vertnum[mesh_id]
+        mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
+        #print(mesh_verts.shape)
+
+        rots = quaternion.rotate_vectors(np.quaternion(*rot_quat), mesh_verts)
+        #r3z = np.max(model.mesh_vert[verts[r3_meshid]:, 2])
+        if name ==  "rock1":
+            max_val = np.max(rots[:,2])
+
+
+    vert_shape = model.mesh_vert.shape
+    model.mesh_vertadr
+
+    #random.shuffle(rock_body_ids
+
     model.body_pos[rock_body_ids[0]] = np.array(sample_xyz(left_rock_range))
+    print(max_val + model.body_pos[rock_body_ids[0]][2])
     model.body_pos[rock_body_ids[1]] = np.array(sample_xyz(mid_rock_range))
     model.body_pos[rock_body_ids[2]] = np.array(sample_xyz(right_rock_range))
     #print("1", model.geom_type[rock_geom_ids[0]])
     #print("2", model.geom_type[rock_geom_ids[1]])
     #print("3", model.geom_type[rock_geom_ids[2]])
 
+
+    # 2. body pos gives height (we are randomizing that above), but if the mesh is rotated,
+    # the axis matters for how tall the object will be out of the ground
+    # So what to do?
+
+    #for i in range(3):
+    #i = 0
+    #bi = rock_body_ids[i]
+    #gi = rock_geom_ids[i]
+    #print("body: ", model.body_pos[bi])
+
+    # 1. Mesh and mesh vert does not work
+    #r1_meshid = rock_mesh_ids[0]
+    #r2_meshid = rock_mesh_ids[1]
+    #r3_meshid = rock_mesh_ids[2]
+    #verts = model.mesh_vertadr
+    #print(verts[r1_meshid])
+    #r1z = np.max(model.mesh_vert[verts[r1_meshid]:verts[r2_meshid], 2])
+    #r2z = np.max(model.mesh_vert[verts[r2_meshid]:verts[r3_meshid], 2])
+    #r3z = np.max(model.mesh_vert[verts[r3_meshid]:, 2])
+    #print(r1z, r2z, r3z)
 
 
 def random_quat():

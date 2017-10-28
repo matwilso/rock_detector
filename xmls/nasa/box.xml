@@ -30,8 +30,8 @@
 		<material name="arena_mat" shininess="0.03" specular="0.75" texture="arena_tex"></material>
 
 		<mesh file="nasa_minimal.stl" name="minimal"></mesh>
-		<mesh file="rock1.stl" name="rock1" scale="0.05 0.05 0.05"></mesh>
-		<mesh file="rock2.stl" name="rock2" scale="0.05 0.05 0.05"></mesh>
+		<mesh file="rock1.stl" name="rock1" scale="0.1 0.1 0.1"></mesh>
+		<mesh file="rock2.stl" name="rock2" scale="0.1 0.1 0.1"></mesh>
 		<mesh file="rock3.stl" name="rock3" scale="0.05 0.05 0.05"></mesh>
 	</asset>
 
