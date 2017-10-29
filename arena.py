@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
 # BOOKMARK
-# (1) need to get height of meshes and (2) need to figure out rock randomization blender maybe
+# (1) need to figure out rock randomization blender maybe
 
-
-from collections import namedtuple
 import random
 import numpy as np
 import quaternion
@@ -25,10 +23,6 @@ from torch.autograd import Variable
 from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
 import os
-
-
-
-#model = load_model_from_path("xmls/nasa/minimal.xml")
 
 # Neural net training
 #vgg16 = models.vgg16_bn(pretrained=True)
@@ -55,8 +49,6 @@ import os
 #
 #    loss.backward()
 #    optimizer.step()
-
-
 
 # What is going to be my network output and how am I going to compute a loss on it?
 # I am thinking x and y coordinates of rocks and their height above ground (z-height)
@@ -123,7 +115,9 @@ import os
 # NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
 # could be about 2 days for full convergence
 
-
+# TODO: need to add some distractor field of view objects like the arms that were
+# in the shot during the comp.  We may not have any such things, but it would be
+# good to be robust to them
 
 # OBJECT TYPE THINGS
 def Range(min, max):
@@ -198,6 +192,7 @@ rock_rz = Range(afz, afz + 0.2)
 left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
 mid_rx = Range(-rock_lanex, rock_lanex)
 right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
+
 # Form full 3D sample range
 left_rock_range = Range3D(left_rx, rock_ry, rock_rz)
 mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
@@ -205,11 +200,11 @@ right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
 rock_ranges = [left_rock_range, mid_rock_range, right_rock_range]
 
 # Rock size, mesh scaling, type, and visibility
-rock_r1dim = Range(0.05, 0.2)  # how large 1 dim of the rock is
-rock_size_range = rto3d(rock_r1dim) #
-rock_rtypes = Range(7, 7+1)   # can sample 3 to 8 for different geom shapes
-rock_mesh_scale = 1  # how much we need to scale rock meshes compared to the default geoms
-rocks_active = {} # which of the rocks are currently visible (will be used for training)
+rock_mesh_scale = 100  # how much we need to scale rock meshes compared to the default geoms
+
+rock_r1dim = 100000 * Range(0.2, 0.2)  # how large 1 dim of the rock is
+rock_size_range = 10000 * rto3d(rock_r1dim) 
+rock_rtypes = Range(7, 7)   # can sample 3 to 8 for different geom shapes
 
 
 # UTILS
@@ -304,8 +299,6 @@ def mod_arena():
         model.body_quat[body_id] = jitter_quat(model.body_quat[body_id], 0.001)
 
 
-
-
 def mod_rocks():
     """
     Randomize the rocks so that the model will generalize to competition rocks
@@ -319,6 +312,7 @@ def mod_rocks():
     rock_geom_ids = {}
     rock_mesh_ids = {}
     max_heights = {} 
+    rocks_active = {} # which of the rocks are currently visible (will be used for training)
 
     for name in model.geom_names:
         if name[:4] != "rock":
@@ -334,15 +328,14 @@ def mod_rocks():
         geom_type =  sample(rock_rtypes, as_int=True)
         model.geom_type[geom_id] = geom_type       
 
-        this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
-        model.geom_size[geom_id] = sample_xyz(this_range)
-
+        #this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
+        model.geom_size[geom_id] = sample_xyz(rock_size_range)
 
         if random.uniform(0, 1) < 0.05:
-            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
+            model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
             rocks_active[name] = False
         else:
-            #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
+            model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
             rocks_active[name] = True
 
         rot_quat = random_quat()
@@ -356,20 +349,22 @@ def mod_rocks():
         max_height = np.max(rots[:,2])
         max_heights[name] = max_height
 
-    # Randomize the positions of the rocks. Since the rock1 mesh is always the 
-    # same we want to cycle it through to every position, etc.
-    shuffle_ids = [keyval[1] for keyval in rock_body_ids.items()]
-    random.shuffle(shuffle_ids)
-    for i in range(len(shuffle_ids)):
-        model.body_pos[shuffle_ids[i]] = np.array(sample_xyz(rock_ranges[i]))
+    rock_mod_cache = [] 
 
+    # Randomize the positions of the rocks. 
 
-    # Set max height to max z of mesh + body_pos z value (because this is jittered)
-    for name in max_heights.keys():
-        max_heights[name] += model.body_pos[rock_body_ids[name]][2]
+    shuffle_names = list(rock_body_ids.keys())
+    #random.shuffle(shuffle_names)
 
-    return max_heights
+    for i in range(len(shuffle_names)):
+        name = shuffle_names[i]
+        active = rocks_active[name]
+        model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
+        z_height = max_heights[name] + model.body_pos[rock_body_ids[name]][2]
 
+        rock_mod_cache.append((name, active, z_height))
+
+    return rock_mod_cache
 
 
 model = load_model_from_path("xmls/nasa/box.xml")
@@ -391,7 +386,7 @@ while True:
     mod_textures()
     mod_lights()
     mod_camera()
-    max_heights = mod_rocks()
+    rock_mod_cache = mod_rocks()
     mod_arena()
     sim.step()  # NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK 
 
@@ -405,29 +400,37 @@ while True:
     #plt.show()
 
     floor_offset = model.body_pos[model.body_name2id('floor')]
+    cam_pos = model.cam_pos[0]
+
     r1_pos = floor_offset + model.body_pos[model.body_name2id('rock1')]
     r2_pos = floor_offset + model.body_pos[model.body_name2id('rock2')]
     r3_pos = floor_offset + model.body_pos[model.body_name2id('rock3')]
-    cam_pos = model.cam_pos[0]
 
     r1_diff = r1_pos - cam_pos
     r2_diff = r2_pos - cam_pos
     r3_diff = r3_pos - cam_pos
-    r1_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r1_diff[0], r1_diff[1], max_heights["rock1"])
-    #r2_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r2_diff[0], r2_diff[1], r2_diff[2])
-    #r3_text = "x: {0:.2f} y: {1:.2f} z:{2:.2f}".format(r3_diff[0], r3_diff[1], r3_diff[2])
+    for slot in rock_mod_cache:
+        name = slot[0]
+        active = slot[1]
+        z_height = slot[2]
+
+        pos = floor_offset + model.body_pos[model.body_name2id(name)]
+        diff = pos - cam_pos
+
+        text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
+        if active:
+            viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+
 
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
-    viewer.add_marker(pos=r1_pos, label=r1_text)
-    #viewer.add_marker(pos=r2_pos, label=r2_text)
-    #viewer.add_marker(pos=r3_pos, label=r3_text)
-    viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
+    viewer.add_marker(pos=cam_pos, label="CAM: {}".format(cam_pos, rpy))
 
     viewer.render()
     t += 1
     if t > 100 and os.getenv('TESTING') is not None:
         break
+
 
 
 # TODO: set the arena center bin is 0,0
