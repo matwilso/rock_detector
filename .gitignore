@@ -1,4 +1,7 @@
 *.swp
+assets/add_mesh_rocks/
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

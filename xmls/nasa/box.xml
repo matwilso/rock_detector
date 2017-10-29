@@ -105,8 +105,8 @@
 		  <body name="bin_wall" pos="-2.19 -3.79 0.6">
              <geom name="bin_wall" type="box" size="2.09 0.05 0.65" material="bin_mat"/>
           </body>
-		  <body name="dig_wall" pos="-2.19 3.59 0.6">
-             <geom name="dig_wall" type="box" size="2.09 0.05 0.65" material="dig_mat"/>
+		  <body name="dig_wall" pos="-2.19 3.59 0.4">
+             <geom name="dig_wall" type="box" size="2.09 0.05 0.45" material="dig_mat"/>
 		 </body>
 		</body>
 	</worldbody>

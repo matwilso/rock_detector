@@ -1,0 +1,395 @@
+{
+  "settings": {
+    "default": {
+      "title": "Default",
+      "size": {
+        "scale": [
+          {
+            "axis": "X",
+            "lower": "1.0",
+            "upper": "1.0"
+          },
+          {
+            "axis": "Y",
+            "lower": "1.0",
+            "upper": "1.0"
+          },
+          {
+            "axis": "Z",
+            "lower": "1.0",
+            "upper": "1.0"
+          }
+        ],
+        "skew": [
+          {
+            "axis": "X",
+            "value": "0.0"
+          },
+          {
+            "axis": "Y",
+            "value": "0.0"
+          },
+          {
+            "axis": "Z",
+            "value": "0.0"
+          }
+        ],
+        "use_scale_dis": "False",
+        "scale_fac": "[1.0, 1.0, 1.0]"
+      },
+      "shape": {
+        "deform": "5.0",
+        "rough": "2.5",
+        "detail": "3",
+        "display_detail": "2",
+        "smooth_fac": "0.0",
+        "smooth_it": "0"
+      },
+      "material": {
+        "mat_enable": "False",
+        "mat_color": "[0.5, 0.5, 0.5]",
+        "mat_bright": "0.85",
+        "mat_rough": "1.0",
+        "mat_spec": "0.2",
+        "mat_hard": "50",
+        "mat_use_trans": "False",
+        "mat_alpha": "0.0",
+        "mat_cloudy": "0.0",
+        "mat_IOR": "1.0",
+        "mat_mossy": "0.0"
+      },
+      "random": {
+        "use_generate": "True",
+        "use_random_seed": "True",
+        "user_seed": "1"
+      }
+    },
+    "preset": [
+      {
+        "-id": "1",
+        "title": "River Rock",
+        "size": {
+          "scale": [
+            {
+              "axis": "X",
+              "lower": "0.5",
+              "upper": "1.25"
+            },
+            {
+              "axis": "Y",
+              "lower": "0.5",
+              "upper": "1.25"
+            },
+            {
+              "axis": "Z",
+              "lower": "0.5",
+              "upper": "1.25"
+            }
+          ],
+          "skew": [
+            {
+              "axis": "X",
+              "value": "-0.5"
+            },
+            {
+              "axis": "Y",
+              "value": "-0.5"
+            },
+            {
+              "axis": "Z",
+              "value": "-0.5"
+            }
+          ],
+          "use_scale_dis": "False",
+          "scale_fac": "[1.0, 1.0, 1.0]"
+        },
+        "shape": {
+          "deform": "3.0",
+          "rough": "2.0",
+          "detail": "2",
+          "display_detail": "2",
+          "smooth_fac": "2.0",
+          "smooth_it": "2"
+        },
+        "material": {
+          "mat_enable": "True",
+          "mat_color": "[0.5, 0.5, 0.5]",
+          "mat_bright": "0.85",
+          "mat_rough": "0.125",
+          "mat_spec": "0.5",
+          "mat_hard": "50",
+          "mat_use_trans": "False",
+          "mat_alpha": "0.0",
+          "mat_cloudy": "0.0",
+          "mat_IOR": "1.0",
+          "mat_mossy": "0.0"
+        },
+        "random": {
+          "use_generate": "True",
+          "use_random_seed": "True",
+          "user_seed": "1"
+        }
+      },
+      {
+        "-id": "2",
+        "title": "Asteroid",
+        "size": {
+          "scale": [
+            {
+              "axis": "X",
+              "lower": "1.0",
+              "upper": "5.0"
+            },
+            {
+              "axis": "Y",
+              "lower": "1.0",
+              "upper": "5.0"
+            },
+            {
+              "axis": "Z",
+              "lower": "1.0",
+              "upper": "5.0"
+            }
+          ],
+          "skew": [
+            {
+              "axis": "X",
+              "value": "0.0"
+            },
+            {
+              "axis": "Y",
+              "value": "0.0"
+            },
+            {
+              "axis": "Z",
+              "value": "0.0"
+            }
+          ],
+          "use_scale_dis": "False",
+          "scale_fac": "[1.0, 1.0, 1.0]"
+        },
+        "shape": {
+          "deform": "7.5",
+          "rough": "3.0",
+          "detail": "4",
+          "display_detail": "3",
+          "smooth_fac": "0.0",
+          "smooth_it": "0"
+        },
+        "material": {
+          "mat_enable": "True",
+          "mat_color": "[0.3, 0.25, 0.2]",
+          "mat_bright": "0.85",
+          "mat_rough": "1.5",
+          "mat_spec": "0.25",
+          "mat_hard": "30",
+          "mat_use_trans": "False",
+          "mat_alpha": "0.0",
+          "mat_cloudy": "0.0",
+          "mat_IOR": "1.0",
+          "mat_mossy": "0.0"
+        },
+        "random": {
+          "use_generate": "True",
+          "use_random_seed": "True",
+          "user_seed": "1"
+        }
+      },
+      {
+        "-id": "3",
+        "title": "Sandstone",
+        "size": {
+          "scale": [
+            {
+              "axis": "X",
+              "lower": "1.0",
+              "upper": "1.0"
+            },
+            {
+              "axis": "Y",
+              "lower": "1.0",
+              "upper": "1.0"
+            },
+            {
+              "axis": "Z",
+              "lower": "1.0",
+              "upper": "1.0"
+            }
+          ],
+          "skew": [
+            {
+              "axis": "X",
+              "value": "0.0"
+            },
+            {
+              "axis": "Y",
+              "value": "0.0"
+            },
+            {
+              "axis": "Z",
+              "value": "0.0"
+            }
+          ],
+          "use_scale_dis": "True",
+          "scale_fac": "[5.0, 5.0, 0.1]"
+        },
+        "shape": {
+          "deform": "0.5",
+          "rough": "1.0",
+          "detail": "3",
+          "display_detail": "3",
+          "smooth_fac": "2.0",
+          "smooth_it": "2"
+        },
+        "material": {
+          "mat_enable": "True",
+          "mat_color": "[0.5, 0.4, 0.35]",
+          "mat_bright": "0.85",
+          "mat_rough": "0.1",
+          "mat_spec": "0.2",
+          "mat_hard": "50",
+          "mat_use_trans": "False",
+          "mat_alpha": "0.0",
+          "mat_cloudy": "0.0",
+          "mat_IOR": "1.0",
+          "mat_mossy": "0.0"
+        },
+        "random": {
+          "use_generate": "True",
+          "use_random_seed": "True",
+          "user_seed": "1"
+        }
+      },
+      {
+        "-id": "4",
+        "title": "Ice",
+        "size": {
+          "scale": [
+            {
+              "axis": "X",
+              "lower": "0.0",
+              "upper": "2.0"
+            },
+            {
+              "axis": "Y",
+              "lower": "0.0",
+              "upper": "2.0"
+            },
+            {
+              "axis": "Z",
+              "lower": "0.0",
+              "upper": "2.0"
+            }
+          ],
+          "skew": [
+            {
+              "axis": "X",
+              "value": "0.0"
+            },
+            {
+              "axis": "Y",
+              "value": "0.0"
+            },
+            {
+              "axis": "Z",
+              "value": "0.0"
+            }
+          ],
+          "use_scale_dis": "False",
+          "scale_fac": "[1.0, 1.0, 1.0]"
+        },
+        "shape": {
+          "deform": "5.0",
+          "rough": "1.0",
+          "detail": "3",
+          "display_detail": "2",
+          "smooth_fac": "2.0",
+          "smooth_it": "1"
+        },
+        "material": {
+          "mat_enable": "True",
+          "mat_color": "[0.9, 0.95, 1.0]",
+          "mat_bright": "0.85",
+          "mat_rough": "0.25",
+          "mat_spec": "0.2",
+          "mat_hard": "50",
+          "mat_use_trans": "True",
+          "mat_alpha": "0.9",
+          "mat_cloudy": "0.1",
+          "mat_IOR": "1.31",
+          "mat_mossy": "0.0"
+        },
+        "random": {
+          "use_generate": "True",
+          "use_random_seed": "True",
+          "user_seed": "1"
+        }
+      },
+      {
+        "-id": "5",
+        "title": "Fake Ocean",
+        "size": {
+          "scale": [
+            {
+              "axis": "X",
+              "lower": "10.0",
+              "upper": "10.0"
+            },
+            {
+              "axis": "Y",
+              "lower": "10.0",
+              "upper": "10.0"
+            },
+            {
+              "axis": "Z",
+              "lower": "0.0",
+              "upper": "0.0"
+            }
+          ],
+          "skew": [
+            {
+              "axis": "X",
+              "value": "0.0"
+            },
+            {
+              "axis": "Y",
+              "value": "0.0"
+            },
+            {
+              "axis": "Z",
+              "value": "0.0"
+            }
+          ],
+          "use_scale_dis": "False",
+          "scale_fac": "[1.0, 1.0, 1.0]"
+        },
+        "shape": {
+          "deform": "7.5",
+          "rough": "3.0",
+          "detail": "4",
+          "display_detail": "3",
+          "smooth_fac": "0.0",
+          "smooth_it": "0"
+        },
+        "material": {
+          "mat_enable": "True",
+          "mat_color": "[0.1, 0.12, 0.125]",
+          "mat_bright": "0.85",
+          "mat_rough": "1.5",
+          "mat_spec": "0.25",
+          "mat_hard": "30",
+          "mat_use_trans": "True",
+          "mat_alpha": "0.5",
+          "mat_cloudy": "0.5",
+          "mat_IOR": "1.333",
+          "mat_mossy": "0.0"
+        },
+        "random": {
+          "use_generate": "True",
+          "use_random_seed": "True",
+          "user_seed": "1"
+        }
+      }
+    ]
+  }
+}

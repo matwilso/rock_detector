@@ -119,6 +119,9 @@ import os
 # in the shot during the comp.  We may not have any such things, but it would be
 # good to be robust to them
 
+# TODO: in the autonomy sequence, we should have it rotate slightly towards the middle, 
+# depending on which side it is on.  So just set a nav goal to rotate. Pretty easy
+
 # OBJECT TYPE THINGS
 def Range(min, max):
     return np.array([min, max])
@@ -181,9 +184,8 @@ rock_lanex = 0.4  # width parameters of x range
 outer_extra = 0.5 # how much farther rocks should go out on the right and left lanes
 rock_buffx = 0.2  # distacne between rock lanes
 
-# How far into the obstacle zone the rocks should start.  Generally at the comp
-# I don't think they start till about 1.5m, just by eyeballing it
-rock_start_offset = 1.5  
+# How far into the obstacle zone the rocks should start.  
+rock_start_offset = 0.2  
 
 rock_ry = Range(obs_sy + rock_start_offset, obs_endy)
 rock_rz = Range(afz, afz + 0.2)
@@ -199,11 +201,9 @@ mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
 right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
 rock_ranges = [left_rock_range, mid_rock_range, right_rock_range]
 
-# Rock size, mesh scaling, type, and visibility
-rock_mesh_scale = 100  # how much we need to scale rock meshes compared to the default geoms
-
-rock_r1dim = 100000 * Range(0.2, 0.2)  # how large 1 dim of the rock is
-rock_size_range = 10000 * rto3d(rock_r1dim) 
+# Rock size and type (only matters if we are using things besides meshes)
+rock_r1dim = Range(0.2, 0.2)  # how large 1 dim of the rock is
+rock_size_range = rto3d(rock_r1dim) 
 rock_rtypes = Range(7, 7)   # can sample 3 to 8 for different geom shapes
 
 
@@ -292,11 +292,11 @@ def mod_arena():
 
         jitter_x = Range(-0.2, 0.2)
         jitter_y = Range(-0.2, 0.2)
-        jitter_z = Range(-2.0, 0.0)
+        jitter_z = Range(-1.0, 0.0)
         jitter3D = Range3D(jitter_x, jitter_y, jitter_z)
 
         model.body_pos[body_id] = start_body_pos[body_id] + sample_xyz(jitter3D)
-        model.body_quat[body_id] = jitter_quat(model.body_quat[body_id], 0.001)
+        model.body_quat[body_id] = jitter_quat(start_body_quat[body_id], 0.005)
 
 
 def mod_rocks():
@@ -331,12 +331,13 @@ def mod_rocks():
         #this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
         model.geom_size[geom_id] = sample_xyz(rock_size_range)
 
-        if random.uniform(0, 1) < 0.05:
-            model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
-            rocks_active[name] = False
-        else:
-            model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
-            rocks_active[name] = True
+        rocks_active[name] = True
+        #if random.uniform(0, 1) < 0.01:
+        #    #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
+        #    rocks_active[name] = False
+        #else:
+        #    #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
+        #    rocks_active[name] = True
 
         rot_quat = random_quat()
 
@@ -352,9 +353,8 @@ def mod_rocks():
     rock_mod_cache = [] 
 
     # Randomize the positions of the rocks. 
-
     shuffle_names = list(rock_body_ids.keys())
-    #random.shuffle(shuffle_names)
+    random.shuffle(shuffle_names)
 
     for i in range(len(shuffle_names)):
         name = shuffle_names[i]
@@ -379,6 +379,32 @@ start_geo_size = model.geom_size.copy()
 start_body_pos = model.body_pos.copy()
 start_body_quat = model.body_quat.copy()
 
+
+def preproc_img(img):
+    crop = img[24:-24, 80:-80, :]
+    down_sample = crop[::3, ::5, :]
+    return down_sample 
+
+def display_image(cam_img):
+    practice_img = preproc_img(plt.imread("assets/practice.jpg"))
+    round1_img = preproc_img(plt.imread("assets/round1.jpg"))
+    fig = plt.figure()
+
+    subp = fig.add_subplot(1,3,1)
+    imgplot = plt.imshow(practice_img)
+    subp.set_title('Practice Round')
+
+    subp = fig.add_subplot(1,3,2)
+    imgplot = plt.imshow(cam_img)
+    subp.set_title('Sim')
+
+    subp = fig.add_subplot(1,3,3)
+    imgplot = plt.imshow(round1_img)
+    subp.set_title('Round 1')
+
+    plt.show()
+
+
 t = 0
 while True:
 
@@ -392,12 +418,12 @@ while True:
 
 
     # Grab an image from the camera at (224, 244, 3) to feed into CNN
-    cam_img = sim.render(224, 224, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
+    cam_img = sim.render(1280, 720, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
     image_noise_variance = sample(image_noise_rvariance) 
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
+    cam_img = preproc_img(cam_img)
 
-    #plt.imshow(cam_img)
-    #plt.show()
+    display_image(cam_img)
 
     floor_offset = model.body_pos[model.body_name2id('floor')]
     cam_pos = model.cam_pos[0]
@@ -424,7 +450,7 @@ while True:
 
     quat = np.quaternion(*model.cam_quat[0])
     rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
-    viewer.add_marker(pos=cam_pos, label="CAM: {}".format(cam_pos, rpy))
+    viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
 
     viewer.render()
     t += 1
