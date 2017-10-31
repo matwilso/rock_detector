@@ -112,7 +112,7 @@ def make_settings():
 
 settings = make_settings()
 #print(settings["Fake Ocean"])
-rockgen.generateRocks(*settings["Fake Ocean"])
+rockgen.generateRocks(*settings["Default"])
 
 bpy.data.objects['rock'].location.x = 0
 bpy.data.objects['rock'].location.y = 0
@@ -125,7 +125,7 @@ bpy.data.objects['rock'].location.z = 0
 
 
 
-bpy.ops.export_mesh.stl(filepath="xmls/nasa/dirt.stl", check_existing=False)
+bpy.ops.export_mesh.stl(filepath="xmls/nasa/rock3.stl", check_existing=False)
 
 
 

@@ -84,15 +84,15 @@
 			</body>
 			-->
           <body name="floor" pos="-2.19 -0.1 -0.05">
-             <geom name="floor" type="box" size="5.0 5.0 0.05" material="floor_mat"/>
+             <geom name="floor" type="box" size="50.0 50.0 0.05" material="floor_mat"/>
 			 <!--
              <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
-			 -->
 
 
 			 <body name="dirt" pos="0.0 0 0.0">
-				 <geom name="dirt" mesh="dirt" type="mesh" size="1.0 1.0 1.0" material="dirt_mat"/>
+				 <geom name="dirt" mesh="dirt" type="box" size="0.01 0.01 0.01" material="dirt_mat"/>
 			 </body>
+			 -->
 
 			 <body name="rock1" pos="-0.5 0 0.0">
 				 <geom name="rock1" mesh="rock1" type="mesh" size="1.0 1.0 1.0" material="rock1_mat"/>

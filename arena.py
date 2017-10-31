@@ -164,11 +164,6 @@ cam_ydelta = 1.5
 obs_sy = sz_endy
 obs_endy = obs_sy + obs_len
 
-rock_rx = Range(acx, acx) 
-rock_ry = Range(obs_sy+1.0, obs_endy)
-rock_rz = Range(afz, afz)
-rock_range3d = Range3D(rock_rx, rock_ry, rock_rz)
-
 light_rx = Range(leftx, rightx) 
 light_ry = Range(biny, digy)
 light_rz = Range(afz, afz + zhigh)
@@ -196,8 +191,10 @@ rock_buffx = 0.2  # distacne between rock lanes
 
 # How far into the obstacle zone the rocks should start.  
 rock_start_offset = 0.2  
+mid_start_offset = 0.4 # bit more for middle rock
 
 rock_ry = Range(obs_sy + rock_start_offset, obs_endy)
+mid_ry = Range(obs_sy + mid_start_offset, obs_endy)
 rock_rz = Range(afz, afz + 0.2)
 
 # Position dependent ranges
@@ -207,7 +204,7 @@ right_rx = Range(rock_buffx+rock_lanex, 3*rock_lanex + outer_extra)
 
 # Form full 3D sample range
 left_rock_range = Range3D(left_rx, rock_ry, rock_rz)
-mid_rock_range = Range3D(mid_rx, rock_ry, rock_rz)
+mid_rock_range = Range3D(mid_rx, mid_ry, rock_rz)
 right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
 rock_ranges = [left_rock_range, mid_rock_range, right_rock_range]
 
@@ -391,7 +388,7 @@ def mod_rocks():
     #max_height_xys = {}
     rocks_active = {} # which of the rocks are currently visible (will be used for training)
 
-    dirt_height_xy = mod_dirt()
+    #dirt_height_xy = mod_dirt()
 
     for name in model.geom_names:
         if name[:4] != "rock":
@@ -426,8 +423,8 @@ def mod_rocks():
         vert_num = model.mesh_vertnum[mesh_id]
         mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
         rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
-        #model.geom_quat[geom_id] = rot_quat  
-        max_height_idx = np.argmax(rots[:,2], axis=0)
+        model.geom_quat[geom_id] = rot_quat  
+        max_height_idx = np.argmax(rots[:,2])
         max_height_idxs[name] =  max_height_idx
         rot_cache[name] = rots
 
@@ -441,11 +438,10 @@ def mod_rocks():
         name = shuffle_names[i]
         active = rocks_active[name]
         rots = rot_cache[name]
-        #model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
+        model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
 
         max_height_idx = max_height_idxs[name]
         xyz_for_max_z = rots[max_height_idx]
-
 
         global_xyz = floor_offset + xyz_for_max_z + model.body_pos[rock_body_ids[name]]
         gxy = global_xyz[0:2]
@@ -521,7 +517,7 @@ while True:
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
     cam_img = preproc_img(cam_img)
 
-    #display_image(cam_img)
+    display_image(cam_img)
 
     cam_pos = model.cam_pos[0]
 
@@ -554,7 +550,6 @@ while True:
     t += 1
     if t > 100 and os.getenv('TESTING') is not None:
         break
-
 
 
 # TODO: set the arena center bin is 0,0
