@@ -112,7 +112,7 @@
           "smooth_it": "2"
         },
         "material": {
-          "mat_enable": "True",
+          "mat_enable": "False",
           "mat_color": "[0.5, 0.5, 0.5]",
           "mat_bright": "0.85",
           "mat_rough": "0.125",
@@ -177,7 +177,7 @@
           "smooth_it": "0"
         },
         "material": {
-          "mat_enable": "True",
+          "mat_enable": "False",
           "mat_color": "[0.3, 0.25, 0.2]",
           "mat_bright": "0.85",
           "mat_rough": "1.5",
@@ -242,7 +242,7 @@
           "smooth_it": "2"
         },
         "material": {
-          "mat_enable": "True",
+          "mat_enable": "False",
           "mat_color": "[0.5, 0.4, 0.35]",
           "mat_bright": "0.85",
           "mat_rough": "0.1",
@@ -307,7 +307,7 @@
           "smooth_it": "1"
         },
         "material": {
-          "mat_enable": "True",
+          "mat_enable": "False",
           "mat_color": "[0.9, 0.95, 1.0]",
           "mat_bright": "0.85",
           "mat_rough": "0.25",
@@ -364,15 +364,15 @@
           "scale_fac": "[1.0, 1.0, 1.0]"
         },
         "shape": {
-          "deform": "7.5",
-          "rough": "3.0",
-          "detail": "4",
-          "display_detail": "3",
+          "deform": "3.0",
+          "rough": "2.5",
+          "detail": "1",
+          "display_detail": "2",
           "smooth_fac": "0.0",
           "smooth_it": "0"
         },
         "material": {
-          "mat_enable": "True",
+          "mat_enable": "False",
           "mat_color": "[0.1, 0.12, 0.125]",
           "mat_bright": "0.85",
           "mat_rough": "1.5",

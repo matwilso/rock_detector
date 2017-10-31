@@ -5,6 +5,7 @@
 		<map znear=0.0001 />
 	</visual>
 	<asset>
+		<texture name="dirt_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -16,6 +17,7 @@
         <texture type="skybox"    builtin="gradient" name="skybox_tex" rgb1="1 1 1" rgb2=".6 .8 1" 
                  width="256" height="256"/>
 
+		<material name="dirt_mat" shininess="0.03" specular="0.75" texture="dirt_tex"></material>
 		<material name="rock1_mat" shininess="0.03" specular="0.75" texture="rock1_tex"></material>
 		<material name="rock2_mat" shininess="0.03" specular="0.75" texture="rock2_tex"></material>
 		<material name="rock3_mat" shininess="0.03" specular="0.75" texture="rock3_tex"></material>
@@ -32,6 +34,7 @@
 
 
 		<mesh file="nasa_minimal.stl" name="minimal"></mesh>
+		<mesh file="dirt.stl" name="dirt" scale="1.0 1.0 1.0"></mesh>
 		<mesh file="rock1.stl" name="rock1" scale="0.2 0.2 0.2"></mesh>
 		<mesh file="rock2.stl" name="rock2" scale="0.2 0.2 0.2"></mesh>
 		<mesh file="rock3.stl" name="rock3" scale="0.2 0.2 0.2"></mesh>
@@ -81,10 +84,15 @@
 			</body>
 			-->
           <body name="floor" pos="-2.19 -0.1 -0.05">
-             <geom name="floor" type="box" size="50.0 50.0 0.05" material="floor_mat"/>
+             <geom name="floor" type="box" size="5.0 5.0 0.05" material="floor_mat"/>
 			 <!--
              <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
 			 -->
+
+
+			 <body name="dirt" pos="0.0 0 0.0">
+				 <geom name="dirt" mesh="dirt" type="mesh" size="1.0 1.0 1.0" material="dirt_mat"/>
+			 </body>
 
 			 <body name="rock1" pos="-0.5 0 0.0">
 				 <geom name="rock1" mesh="rock1" type="mesh" size="1.0 1.0 1.0" material="rock1_mat"/>

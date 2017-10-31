@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # BOOKMARK
-# (1) need to figure out rock randomization blender maybe
+# Need to figure out Fake Ocean blender stuff. Get divide by 0 error
+# somehow blender is doing some input sanitizing or something. need to figure out how
 
 import random
 import numpy as np
@@ -122,9 +123,18 @@ import os
 # TODO: in the autonomy sequence, we should have it rotate slightly towards the middle, 
 # depending on which side it is on.  So just set a nav goal to rotate. Pretty easy
 
+# TODO: better preproc on the image if necessary (i.e., research this)
+
+
+# TODO: I should try to run this with and without the floor randomization and see if it
+# still works as well.  My guess is that with floor it will still be fine
+
 # OBJECT TYPE THINGS
 def Range(min, max):
-    return np.array([min, max])
+    if min < max:
+        return np.array([min, max])
+    else:
+        return np.array([max, min])
 
 def Range3D(x, y, z):
     return np.array([x,y,z])
@@ -171,7 +181,7 @@ cam_ry = Range(biny+0.2, sz_endy)
 cam_rz = Range(afz + zlow, afz + zhigh)
 cam_range3d = Range3D(cam_rx, cam_ry, cam_rz)
 
-cam_rroll = Range(-85, -95) # think this might actually be yaw
+cam_rroll = Range(-95, -85) # think this might actually be yaw
 cam_rpitch = Range(65, 90)
 cam_ryaw = Range(88, 92) # this might actually be pitch, based on coordinate frames
 cam_angle3 = Range3D(cam_rroll, cam_rpitch, cam_ryaw)
@@ -299,6 +309,71 @@ def mod_arena():
         model.body_quat[body_id] = jitter_quat(start_body_quat[body_id], 0.005)
 
 
+dirt_rx = Range(0.0, 0.3)
+dirt_ry = Range(0.0, 0.3)
+dirt_rz = Range(-0.05, 0.05)
+dirt_range3d = Range3D(dirt_rx, dirt_ry, dirt_rz)
+
+
+dirt_rroll = Range(-180, 180)  # yaw
+dirt_rpitch = Range(-90, -90)
+dirt_ryaw = Range(0, 0) # roll
+dirt_angle3 = Range3D(dirt_rroll, dirt_rpitch, dirt_ryaw)
+
+
+# TODO: need to get the height of this mesh to calculate rock height off
+
+def mod_dirt():
+    geom_id = model.geom_name2id("dirt")
+    body_id = model.body_name2id("dirt")
+    mesh_id = model.geom_dataid[geom_id]
+
+    model.body_pos[body_id] = start_body_pos[body_id]  + sample_xyz(dirt_range3d)
+    model.geom_quat[geom_id] = sample_quat(dirt_angle3)
+    
+    vert_adr = model.mesh_vertadr[mesh_id]
+    vert_num = model.mesh_vertnum[mesh_id]
+    mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
+
+    rot_quat = model.geom_quat[geom_id]
+    rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
+
+    mesh_abs_pos = floor_offset + model.body_pos[body_id] + rots
+
+    xy_indexes = mesh_abs_pos[:, 0:2]
+    z_heights = mesh_abs_pos[:, 2]
+
+    # NOTE: this is not the best method.  It could be that the dirt is placed in a way
+    # that the max height is not the effective max_height of a rock mesh, since it
+    # could be buried.  What would be a better way to do this? 
+    # I could do some subtraction of the rock mesh with the dirt mesh, but this 
+    # becomes quite complicated because the indexing does not line up
+    # This is a decent simple method for now
+
+    def dirt_height_xy(xy):
+
+        # Min squared distance
+        z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
+
+        viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+
+        #print(np.max(mesh_abs_pos, axis=0))
+
+        height = z_heights[z_index]
+        viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
+        #viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x")
+        if height < 0 or height > 0.3:
+            height = 0 
+        return height
+
+    def mean_height(xy):
+        return np.maximum(0, np.mean(z_heights[z_heights > 0]))
+
+
+    return mean_height
+
+
+
 def mod_rocks():
     """
     Randomize the rocks so that the model will generalize to competition rocks
@@ -311,8 +386,12 @@ def mod_rocks():
     rock_body_ids = {}
     rock_geom_ids = {}
     rock_mesh_ids = {}
-    max_heights = {} 
+    max_height_idxs = {} 
+    rot_cache = {}
+    #max_height_xys = {}
     rocks_active = {} # which of the rocks are currently visible (will be used for training)
+
+    dirt_height_xy = mod_dirt()
 
     for name in model.geom_names:
         if name[:4] != "rock":
@@ -329,7 +408,7 @@ def mod_rocks():
         model.geom_type[geom_id] = geom_type       
 
         #this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
-        model.geom_size[geom_id] = sample_xyz(rock_size_range)
+        #model.geom_size[geom_id] = sample_xyz(rock_size_range)
 
         rocks_active[name] = True
         #if random.uniform(0, 1) < 0.01:
@@ -340,27 +419,45 @@ def mod_rocks():
         #    rocks_active[name] = True
 
         rot_quat = random_quat()
+        #rot_quat = model.geom_quat[geom_id]
 
         # Rotate the rock and get  z value of the highest point in the rotated rock mesh
         vert_adr = model.mesh_vertadr[mesh_id]
         vert_num = model.mesh_vertnum[mesh_id]
         mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
         rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
-        model.geom_quat[geom_id] = rot_quat  
-        max_height = np.max(rots[:,2])
-        max_heights[name] = max_height
+        #model.geom_quat[geom_id] = rot_quat  
+        max_height_idx = np.argmax(rots[:,2], axis=0)
+        max_height_idxs[name] =  max_height_idx
+        rot_cache[name] = rots
 
     rock_mod_cache = [] 
 
     # Randomize the positions of the rocks. 
     shuffle_names = list(rock_body_ids.keys())
-    random.shuffle(shuffle_names)
+    #random.shuffle(shuffle_names)
 
     for i in range(len(shuffle_names)):
         name = shuffle_names[i]
         active = rocks_active[name]
-        model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
-        z_height = max_heights[name] + model.body_pos[rock_body_ids[name]][2]
+        rots = rot_cache[name]
+        #model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
+
+        max_height_idx = max_height_idxs[name]
+        xyz_for_max_z = rots[max_height_idx]
+
+
+        global_xyz = floor_offset + xyz_for_max_z + model.body_pos[rock_body_ids[name]]
+        gxy = global_xyz[0:2]
+        max_height = global_xyz[2] 
+        viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
+
+        #dirt_z = dirt_height_xy(gxy)
+        dirt_z = 0
+        #print(name, dirt_z)
+
+
+        z_height = max_height - dirt_z
 
         rock_mod_cache.append((name, active, z_height))
 
@@ -376,9 +473,10 @@ light_modder = LightModder(sim)
 
 # Get start state of params to slightlt jitter later
 start_geo_size = model.geom_size.copy()
+start_geom_quat = model.geom_quat.copy()
 start_body_pos = model.body_pos.copy()
 start_body_quat = model.body_quat.copy()
-
+floor_offset = model.body_pos[model.body_name2id('floor')]
 
 def preproc_img(img):
     crop = img[24:-24, 80:-80, :]
@@ -423,9 +521,8 @@ while True:
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
     cam_img = preproc_img(cam_img)
 
-    display_image(cam_img)
+    #display_image(cam_img)
 
-    floor_offset = model.body_pos[model.body_name2id('floor')]
     cam_pos = model.cam_pos[0]
 
     r1_pos = floor_offset + model.body_pos[model.body_name2id('rock1')]
@@ -443,7 +540,8 @@ while True:
         pos = floor_offset + model.body_pos[model.body_name2id(name)]
         diff = pos - cam_pos
 
-        text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
+        #text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
+        text = "height:{0:.2f}".format(z_height)
         if active:
             viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
 

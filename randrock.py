@@ -102,7 +102,7 @@ def make_settings():
                           mat_mossy,
                           num_of_rocks,
                           user_seed,
-                          use_scale_dis,
+                          False,
                           use_random_seed
         ]
 
@@ -112,13 +112,20 @@ def make_settings():
 
 settings = make_settings()
 #print(settings["Fake Ocean"])
-rockgen.generateRocks(*settings["Default"])
+rockgen.generateRocks(*settings["Fake Ocean"])
 
-bpy.data.objects['rock'].location.x,
+bpy.data.objects['rock'].location.x = 0
 bpy.data.objects['rock'].location.y = 0
 bpy.data.objects['rock'].location.z = 0
 
-bpy.ops.export_mesh.stl(filepath="ocean_floor.stl", check_existing=False)
+
+#bpy.ops.object.modifier_add(type='DECIMATE')
+#bpy.data.objects["rock"].modifiers["Decimate"].ratio = 0.1
+#bpy.ops.object.modifier_apply(apply_as="DATA")
+
+
+
+bpy.ops.export_mesh.stl(filepath="xmls/nasa/dirt.stl", check_existing=False)
 
 
 
