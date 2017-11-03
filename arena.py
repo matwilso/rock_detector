@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 
-# BOOKMARK
-# Need to figure out Fake Ocean blender stuff. Get divide by 0 error
-# somehow blender is doing some input sanitizing or something. need to figure out how
-
+from itertools import count
 import random
 import numpy as np
 import quaternion
 import skimage
 import matplotlib.pyplot as plt
-
-import torchvision.models as models
 
 import torch.optim as optim
 import torch
@@ -19,28 +14,34 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.autograd as autograd
 from torch.autograd import Variable
+import torchvision
 
+#import tensorflow as tf
 
 from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
 import os
 
+BATCH_SIZE = 16  # number of images for a batched forward and backward pass 
+SUPER_BATCH = 100  # number of batches before generating new rocks
+SAVE_PATH = "net.weights"
+SAVE_EVERY = 16
+LOAD_PATH = "net.weights"
+
+
+dtype = torch.FloatTensor
+#dtype = torch.cuda.FloatTensor # Uncomment this to run on GPU
+
 # Neural net training
-#vgg16 = models.vgg16_bn(pretrained=True)
-#vgg16.classifier = nn.Sequential(
-#    nn.Linear(512 * 7 * 7, 256),
-#    nn.ReLU(True),
-#    nn.Linear(256, 64),
-#    nn.ReLU(True),
-#    nn.Linear(64, 3)
-#    )
-#
-#optimizer = optim.Adam(model.parameters(), lr=1e-4)
-#
-#def l2_loss(y_pred, y):
-#    """L2 norm (half norm with no sqrt, copied from tensorflow source"""
-#    return torch.sum((y_pred-y)**2) / 2
-#
+resnet = torchvision.models.resnet50(pretrained=False)
+resnet.fc = nn.Linear(2048, 9)
+resnet.load_state_dict(torch.load(LOAD_PATH))
+optimizer = optim.Adam(resnet.parameters(), lr=1e-4)
+
+def l2_loss(y_pred, y):
+    """L2 norm (half norm with no sqrt, copied from tensorflow source"""
+    return torch.sum((y_pred-y)**2) / 2
+
 #for t in range(500):
 #    coords_pred = vgg16.forward(camera_pixels)
 #    loss = l2_loss(coords_pred, real_coords)
@@ -51,47 +52,7 @@ import os
 #    loss.backward()
 #    optimizer.step()
 
-# What is going to be my network output and how am I going to compute a loss on it?
-# I am thinking x and y coordinates of rocks and their height above ground (z-height)
 
-#TODO: randomize the shape or size of the rocks
-# Alex says there is a way to do it live
-# I should also modify the height of the competition arena walls from like
-# 0 to what I think would be their max height. This can be done live in 
-# some way similar to the CameraModder
-
-# PARAMS TO RANDOMIZE
-
-#  map
-# - 0.5 of the time have the arena map
-# - 0.5 of the time have an open map
-
-# rock
-# - xyz coordinate of rock within some xy range and always at some z height
-# - shape
-# - size
-
-
-# TODO: need to think of some method for when to sample and randomize.  
-# modding and sampling textures is super fast. so maybe do like a batch of 10
-# and then a batchbatch of 10 of those (so 100 frames).
-# 
-# But really I need to worry about what can fit in memory in terms of batch size
-# I think to be safe, it is about 16, maybe 32 frames.  So I could just do a 
-# minibatch that shows the same scene of rocks, just randomized angles
-
-# > The MJB is a stand-alone file and does not refer to any other files. It also 
-# loads faster, especially when the XML contains meshes that require processing 
-# by the compiler. **So we recommend saving commonly used models as MJB and 
-# loading them when needed for simulation.**
-
-# I wonder if there is anyway I could do this.  Somehow merge models? But then
-# again, my underlying model is just a box geom, so will be fast 
-
-
-# TODO: also need to train on a lot of examples that don't have any rocks
-# and find some way to represent that it doesn't see anything. maybe a true
-# or false flag? That actually might be good.
 
 # What about detecting multiple objects? 
 # One thing I could do is just have it detect 3 rocks all the time.  It would give
@@ -102,29 +63,17 @@ import os
 # I could modify the gradient in these cases and not backprop on any xyz.
 # Yeah that would be easy.
 
-
-# TODO: consider switching to ResNet-50 because it is faster and better (jcjohnson)
-# then I gotta figure out where to stick the regression head
-
-# TODO: find a bunch of rock stls on the internet: https://free3d.com/3d-models/rock
-
 # TODO: add some distractor objects, like smaller rocks.  And just the bigger 
 # rocks are the only thing that matters
-
-# TODO: gonna need a lot of finetuning and making sure things are good before I train 
-
-# NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
-# could be about 2 days for full convergence
 
 # TODO: need to add some distractor field of view objects like the arms that were
 # in the shot during the comp.  We may not have any such things, but it would be
 # good to be robust to them
 
-# TODO: in the autonomy sequence, we should have it rotate slightly towards the middle, 
-# depending on which side it is on.  So just set a nav goal to rotate. Pretty easy
+# NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
+# could be about 2 days for full convergence
 
 # TODO: better preproc on the image if necessary (i.e., research this)
-
 
 # TODO: I should try to run this with and without the floor randomization and see if it
 # still works as well.  My guess is that with floor it will still be fine
@@ -195,7 +144,7 @@ mid_start_offset = 0.4 # bit more for middle rock
 
 rock_ry = Range(obs_sy + rock_start_offset, obs_endy)
 mid_ry = Range(obs_sy + mid_start_offset, obs_endy)
-rock_rz = Range(afz, afz + 0.2)
+rock_rz = Range(afz - 0.04, afz + 0.2)
 
 # Position dependent ranges
 left_rx = Range(-3*rock_lanex - outer_extra, -rock_lanex - rock_buffx)
@@ -352,12 +301,12 @@ def mod_dirt():
         # Min squared distance
         z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
 
-        viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+        #viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
 
         #print(np.max(mesh_abs_pos, axis=0))
 
         height = z_heights[z_index]
-        viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
+        #viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
         #viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x")
         if height < 0 or height > 0.3:
             height = 0 
@@ -446,7 +395,7 @@ def mod_rocks():
         global_xyz = floor_offset + xyz_for_max_z + model.body_pos[rock_body_ids[name]]
         gxy = global_xyz[0:2]
         max_height = global_xyz[2] 
-        viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
+        #viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
 
         #dirt_z = dirt_height_xy(gxy)
         dirt_z = 0
@@ -462,7 +411,7 @@ def mod_rocks():
 
 model = load_model_from_path("xmls/nasa/box.xml")
 sim = MjSim(model)
-viewer = MjViewer(sim)
+#viewer = MjViewer(sim)
 tex_modder = TextureModder(sim)
 cam_modder = CameraModder(sim)
 light_modder = LightModder(sim)
@@ -500,8 +449,12 @@ def display_image(cam_img):
 
 
 t = 0
-while True:
+x_batch = []
+y_batch = []
+x_frames = []
+y_grounds = []
 
+for i_step in count(1):
     # Randomize (mod) all relevant parameters
     mod_textures()
     mod_lights()
@@ -510,6 +463,10 @@ while True:
     mod_arena()
     sim.step()  # NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK 
 
+    quat = np.quaternion(*model.cam_quat[0])
+    rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
+    cam_pos = model.cam_pos[0]
+    #viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
 
     # Grab an image from the camera at (224, 244, 3) to feed into CNN
     cam_img = sim.render(1280, 720, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
@@ -517,9 +474,8 @@ while True:
     cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
     cam_img = preproc_img(cam_img)
 
-    display_image(cam_img)
+    #display_image(cam_img)
 
-    cam_pos = model.cam_pos[0]
 
     r1_pos = floor_offset + model.body_pos[model.body_name2id('rock1')]
     r2_pos = floor_offset + model.body_pos[model.body_name2id('rock2')]
@@ -528,6 +484,8 @@ while True:
     r1_diff = r1_pos - cam_pos
     r2_diff = r2_pos - cam_pos
     r3_diff = r3_pos - cam_pos
+
+    ground_truth = []
     for slot in rock_mod_cache:
         name = slot[0]
         active = slot[1]
@@ -539,14 +497,42 @@ while True:
         #text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
         text = "height:{0:.2f}".format(z_height)
         if active:
-            viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+            pass
+            #viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+
+        ground_truth += [diff[0], diff[1], z_height]
+    
+    y_grounds.append(torch.from_numpy(np.array(ground_truth)).type(dtype))
+    x_frames.append(torchvision.transforms.ToTensor()(cam_img).type(dtype))
+
+    if i_step % BATCH_SIZE == 0:
+        x_tense = []
+
+        x_batch = Variable(torch.stack(x_frames))
+        y_batch = Variable(torch.stack(y_grounds))
 
 
-    quat = np.quaternion(*model.cam_quat[0])
-    rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
-    viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
+        coords_pred = resnet.forward(x_batch)
 
-    viewer.render()
+        #import ipdb; ipdb.set_trace()
+        loss = l2_loss(coords_pred, y_batch)
+    
+        print(t, y_batch.data, coords_pred.data, loss.data[0])
+        optimizer.zero_grad()
+    
+        loss.backward()
+        optimizer.step()
+
+        del x_frames[:]
+        del y_grounds[:]
+
+    if i_step % SAVE_EVERY == 0:
+        print("saving weights to {}".format(SAVE_PATH))
+        torch.save(resnet.state_dict(), SAVE_PATH)
+        print("done saving")
+
+
+    #viewer.render()
     t += 1
     if t > 100 and os.getenv('TESTING') is not None:
         break
