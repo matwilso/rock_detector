@@ -4,18 +4,9 @@ import bpy
 import json
 import ast
 
-#import os
-#dirname, filename = os.path.split(os.path.abspath(__file__))
-
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete()
-
-#bpy.ops.mesh.rocks()
-
-context = bpy.context
 
 def make_settings():
-    """Parse the tree with built in xml parser ;("""
+    """Parse the converted json file for settings"""
     settings = {}
     num_of_rocks = 1
 
@@ -109,39 +100,26 @@ def make_settings():
     return settings
 
 
-
+context = bpy.context
 settings = make_settings()
-#print(settings["Fake Ocean"])
-rockgen.generateRocks(*settings["Default"])
-
-bpy.data.objects['rock'].location.x = 0
-bpy.data.objects['rock'].location.y = 0
-bpy.data.objects['rock'].location.z = 0
 
 
-#bpy.ops.object.modifier_add(type='DECIMATE')
-#bpy.data.objects["rock"].modifiers["Decimate"].ratio = 0.1
-#bpy.ops.object.modifier_apply(apply_as="DATA")
+for i in range(1,4):
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
+    rockgen.generateRocks(*settings["Default"])
+    
+    #import pdb; pdb.set_trace()
+    #print(bpy.data.objects)
 
-
-
-bpy.ops.export_mesh.stl(filepath="xmls/nasa/rock3.stl", check_existing=False)
-
-
-
-#tree= ET.parse('add_mesh_rocks.xml')
-#settings_elem = tree.find("settings")
-#default_elem = settings.find("default")
-#preset_elems = settings.findall("preset")
-#preset_elems = [default] + preset_elems
-
-#for preset in preset_elems: 
-#    size_elem = preset.find("size")
-#    scale_elems = size_elem.findall("scale")
-#    scalex_elem = scale_elems[0]
-#    scaley_elem = scale_elems[1]
-#    scalez_elem = scale_elems[2]
-
-
-#    shape_elem = preset.find("shape")
-#    material_elem = preset.find("material")
+    rock_name = bpy.data.objects.keys()[0]
+    #bpy.data.objects[rock_name].location.x = 0
+    #bpy.data.objects[rock_name].location.y = 0
+    #bpy.data.objects[rock_name].location.z = 0
+    
+    
+    #bpy.ops.object.modifier_add(type='DECIMATE')
+    #bpy.data.objects["rock"].modifiers["Decimate"].ratio = 0.1
+    #bpy.ops.object.modifier_apply(apply_as="DATA")
+    
+    bpy.ops.export_mesh.stl(filepath="xmls/nasa/rock{}.stl".format(i), check_existing=False)

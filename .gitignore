@@ -1,6 +1,6 @@
 *.swp
 assets/add_mesh_rocks/
-
+xmls/nasa/rock*.stl
 
 
 # Byte-compiled / optimized / DLL files
