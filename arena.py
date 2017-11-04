@@ -115,7 +115,6 @@ def l2_loss(y_pred, y):
 
 # TODO: set the arena center bin is 0,0
 
-# TODO: add some better cross platform support
 
 # OBJECT TYPE THINGS
 def Range(min, max):
@@ -197,19 +196,18 @@ right_rock_range = Range3D(right_rx, rock_ry, rock_rz)
 rock_ranges = [left_rock_range, mid_rock_range, right_rock_range]
 
 # Rock size and type (only matters if we are using things besides meshes)
-rock_r1dim = Range(0.2, 0.2)  # how large 1 dim of the rock is
-rock_size_range = rto3d(rock_r1dim) 
-rock_rtypes = Range(7, 7)   # can sample 3 to 8 for different geom shapes
+#rock_r1dim = Range(0.2, 0.2)  # how large 1 dim of the rock is
+#rock_size_range = rto3d(rock_r1dim) 
+#rock_rtypes = Range(3, 8)   # can sample 3 to 8 for different geom shapes
 
 dirt_rx = Range(0.0, 0.3)
 dirt_ry = Range(0.0, 0.3)
 dirt_rz = Range(-0.05, 0.05)
 dirt_range3d = Range3D(dirt_rx, dirt_ry, dirt_rz)
 
-
 dirt_rroll = Range(-180, 180)  # yaw
 dirt_rpitch = Range(-90, -90)
-dirt_ryaw = Range(0, 0) # roll
+dirt_ryaw = Range(0, 0)  # roll
 dirt_angle3 = Range3D(dirt_rroll, dirt_rpitch, dirt_ryaw)
 
 
@@ -305,7 +303,9 @@ def mod_arena():
 
 # TODO: need to get the height of this mesh to calculate rock height off
 
+# Not currently used
 def mod_dirt():
+    """Randomize position and rotation of dirt"""
     geom_id = model.geom_name2id("dirt")
     body_id = model.body_name2id("dirt")
     mesh_id = model.geom_dataid[geom_id]
@@ -333,7 +333,6 @@ def mod_dirt():
     # This is a decent simple method for now
 
     def dirt_height_xy(xy):
-
         # Min squared distance
         z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
 
@@ -351,19 +350,17 @@ def mod_dirt():
     def mean_height(xy):
         return np.maximum(0, np.mean(z_heights[z_heights > 0]))
 
-
     return mean_height
-
 
 
 def mod_rocks():
     """
     Randomize the rocks so that the model will generalize to competition rocks
-    This involves:
-        - Random positions
-        - Random orientations
-        - Rotating positions of meshes
-        - [TODO]:  completely randomizing the meshes every n runs (e.g., with blender)
+    This modifications currently being done are:
+        - Randomizing positions
+        - Randomizing orientations
+        - Shuffling the 3 rock meshes so that they can be on the left, middle, or right
+        - Generating new random rock meshes every n runs (with Blender)
     """
     rock_body_ids = {}
     rock_geom_ids = {}
@@ -371,7 +368,6 @@ def mod_rocks():
     max_height_idxs = {} 
     rot_cache = {}
     #max_height_xys = {}
-    rocks_active = {} # which of the rocks are currently visible (will be used for training)
 
     #dirt_height_xy = mod_dirt()
 
@@ -386,24 +382,8 @@ def mod_rocks():
         rock_body_ids[name] = body_id
         rock_mesh_ids[name] = mesh_id
 
-        geom_type =  sample(rock_rtypes, as_int=True)
-        model.geom_type[geom_id] = geom_type       
-
-        #this_range = rock_size_range if geom_type != 7 else rock_size_range*rock_mesh_scale
-        #model.geom_size[geom_id] = sample_xyz(rock_size_range)
-
-        rocks_active[name] = True
-        #if random.uniform(0, 1) < 0.01:
-        #    #model.geom_rgba[geom_id] = np.array([1, 1, 1, 0])
-        #    rocks_active[name] = False
-        #else:
-        #    #model.geom_rgba[geom_id] = np.array([1, 1, 1, 1])
-        #    rocks_active[name] = True
-
+        # Rotate the rock and get z value of the highest point in the rotated rock mesh
         rot_quat = random_quat()
-        #rot_quat = model.geom_quat[geom_id]
-
-        # Rotate the rock and get  z value of the highest point in the rotated rock mesh
         vert_adr = model.mesh_vertadr[mesh_id]
         vert_num = model.mesh_vertnum[mesh_id]
         mesh_verts = model.mesh_vert[vert_adr : vert_adr+vert_num]
@@ -417,11 +397,10 @@ def mod_rocks():
 
     # Randomize the positions of the rocks. 
     shuffle_names = list(rock_body_ids.keys())
-    #random.shuffle(shuffle_names)
+    random.shuffle(shuffle_names)
 
     for i in range(len(shuffle_names)):
         name = shuffle_names[i]
-        active = rocks_active[name]
         rots = rot_cache[name]
         model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(rock_ranges[i]))
 
@@ -440,15 +419,15 @@ def mod_rocks():
 
         z_height = max_height - dirt_z
 
-        rock_mod_cache.append((name, active, z_height))
+        rock_mod_cache.append((name, z_height))
 
     return rock_mod_cache
 
 
 def randrocks():
+    """Generate a new set of 3 random rock meshes using a Blender script"""
     import subprocess
     subprocess.call([FLAGS.blender_path, "--background", "--python", "randrock.py"])
-
 
 def preproc_img(img):
     crop = img[24:-24, 80:-80, :]
@@ -474,8 +453,6 @@ def display_image(cam_img):
 
     plt.show()
 
-
-
 def main():
     global model, sim, tex_modder, cam_modder, light_modder
     x_batch = []
@@ -486,7 +463,6 @@ def main():
     last_batch_count = 0
     
     for i_step in count(1):
-
         # Randomize (mod) all relevant parameters
         mod_textures()
         mod_lights()
@@ -495,6 +471,7 @@ def main():
         mod_arena()
         sim.step()  # NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK 
     
+        # Get angle of camera and display it 
         quat = np.quaternion(*model.cam_quat[0])
         rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
         cam_pos = model.cam_pos[0]
@@ -508,7 +485,6 @@ def main():
     
         #display_image(cam_img)
     
-    
         r1_pos = floor_offset + model.body_pos[model.body_name2id('rock1')]
         r2_pos = floor_offset + model.body_pos[model.body_name2id('rock2')]
         r3_pos = floor_offset + model.body_pos[model.body_name2id('rock3')]
@@ -520,52 +496,51 @@ def main():
         ground_truth = []
         for slot in rock_mod_cache:
             name = slot[0]
-            active = slot[1]
-            z_height = slot[2]
+            z_height = slot[1]
     
             pos = floor_offset + model.body_pos[model.body_name2id(name)]
             diff = pos - cam_pos
-    
             #text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
             text = "height:{0:.2f}".format(z_height)
-            if active:
-                viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+            viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
     
             ground_truth += [diff[0], diff[1], z_height]
         
+        # If visualizing, skip network training
         if FLAGS.visualize:
             viewer.render()
             continue
 
+        # Ground truth measurements and camera frames to torch Tensors
         y_grounds.append(torch.from_numpy(np.array(ground_truth)).type(dtype))
         x_frames.append(torchvision.transforms.ToTensor()(cam_img).type(dtype))
     
+        # Batch is full, do a network update
         if i_step % FLAGS.batch_size == 0:
             batch_count += 1
-            x_tense = []
-    
+            # Stack all the Tensors for this batch, do a forward pass, and compute
+            # the loss
             x_batch = Variable(torch.stack(x_frames))
             y_batch = Variable(torch.stack(y_grounds))
-    
-    
             coords_pred = resnet.forward(x_batch)
-    
             loss = l2_loss(coords_pred, y_batch)
-        
             print(i_step, y_batch.data, coords_pred.data, loss.data[0])
+
+            # Backward pass and update weights 
             optimizer.zero_grad()
-        
             loss.backward()
             optimizer.step()
-    
+            # Reset batch lists
             del x_frames[:]
             del y_grounds[:]
     
+        # Save weights every x batches
         if batch_count != last_batch_count and batch_count % FLAGS.save_every == 0:
             print("saving weights to {}".format(FLAGS.save_path))
             torch.save(resnet.state_dict(), FLAGS.save_path)
             print("done saving")
 
+        # If super batch, generate new rocks and reload model
         if batch_count != last_batch_count and batch_count % FLAGS.super_batch == 0:
             randrocks()
 
@@ -579,6 +554,7 @@ def main():
     
 
 if __name__ == "__main__":
+    # Parse command line arguments
     FLAGS, unparsed = parser.parse_known_args()
     if FLAGS.os == "mac":
         FLAGS.dtype = "cpu"
@@ -586,6 +562,7 @@ if __name__ == "__main__":
     if FLAGS.os == "ubuntu":
         FLAGS.dtype = "gpu"
         FLAGS.blender_path = "blender"
+    # Set torch type for either CPU or CUDA (this allows ops to be run on GPU)
     if FLAGS.dtype == "cpu":
         dtype = torch.FloatTensor
     else:
@@ -601,26 +578,31 @@ if __name__ == "__main__":
     if FLAGS.visualize:
         viewer = MjViewer(sim)
     else:
+        # If we are not visualizing, create a fake visualizer that does nothing
+        # This was just so that the rest of the code stays clean and doesn't have
+        # to do a bunch of checks. 
         class FakeViewer(object):
             def __init__(self):
                 pass
             def add_marker(self, **kwargs):
                 pass
         viewer = FakeViewer()
-
     
-    # Get start state of params to slightlt jitter later
+    # Get start state of params to slightly jitter later
     start_geo_size = model.geom_size.copy()
     start_geom_quat = model.geom_quat.copy()
     start_body_pos = model.body_pos.copy()
     start_body_quat = model.body_quat.copy()
     floor_offset = model.body_pos[model.body_name2id('floor')]
 
-    # Neural net training
+    # Neural net training setup
+    # ResNet 50 CNN model
     resnet = torchvision.models.resnet50(pretrained=False)
+    # Tack on an affine layer to produce a vector of 9 values
     resnet.fc = nn.Linear(2048, 9)
+    # Load a previously trained set of weights
     resnet.load_state_dict(torch.load(FLAGS.load_path))
+    # Torch Adam optimizer 
     optimizer = optim.Adam(resnet.parameters(), lr=1e-4)
-
 
     main()
