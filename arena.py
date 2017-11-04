@@ -8,14 +8,7 @@ import quaternion
 import skimage
 import matplotlib.pyplot as plt
 
-import torch.optim as optim
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.autograd as autograd
-from torch.autograd import Variable
-import torchvision
+import tensorflow as tf
 
 from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
@@ -69,22 +62,6 @@ parser.add_argument(
 parser.add_argument(
     '--os', type=str, default="none",
     help='none (don\'t override any defaults) or mac or ubuntu')
-
-
-def l2_loss(y_pred, y):
-    """L2 norm (half norm with no sqrt, copied from tensorflow source"""
-    return torch.sum((y_pred-y)**2) / 2
-
-#for t in range(500):
-#    coords_pred = vgg16.forward(camera_pixels)
-#    loss = l2_loss(coords_pred, real_coords)
-#
-#    print(t, loss.data[0])
-#    optimizer.zero_grad()
-#
-#    loss.backward()
-#    optimizer.step()
-
 
 # What about detecting multiple objects? 
 # One thing I could do is just have it detect 3 rocks all the time.  It would give
@@ -512,16 +489,14 @@ def main():
             continue
 
         # Ground truth measurements and camera frames to torch Tensors
-        y_grounds.append(torch.from_numpy(np.array(ground_truth)).type(dtype))
-        x_frames.append(torchvision.transforms.ToTensor()(cam_img).type(dtype))
     
         # Batch is full, do a network update
         if i_step % FLAGS.batch_size == 0:
             batch_count += 1
             # Stack all the Tensors for this batch, do a forward pass, and compute
             # the loss
-            x_batch = Variable(torch.stack(x_frames))
-            y_batch = Variable(torch.stack(y_grounds))
+            x_batch = None
+            y_batch = None
             coords_pred = resnet.forward(x_batch)
             loss = l2_loss(coords_pred, y_batch)
             print(i_step, y_batch.data, coords_pred.data, loss.data[0])
@@ -537,7 +512,6 @@ def main():
         # Save weights every x batches
         if batch_count != last_batch_count and batch_count % FLAGS.save_every == 0:
             print("saving weights to {}".format(FLAGS.save_path))
-            torch.save(resnet.state_dict(), FLAGS.save_path)
             print("done saving")
 
         # If super batch, generate new rocks and reload model
@@ -564,12 +538,12 @@ if __name__ == "__main__":
         FLAGS.blender_path = "blender"
     # Set torch type for either CPU or CUDA (this allows ops to be run on GPU)
     if FLAGS.dtype == "cpu":
-        dtype = torch.FloatTensor
+        pass
     else:
-        dtype = torch.cuda.FloatTensor 
+        pass
 
     # Mujoco setup
-    randrocks()
+    #randrocks()
     model = load_model_from_path("xmls/nasa/box.xml")
     sim = MjSim(model)
     tex_modder = TextureModder(sim)
@@ -595,14 +569,20 @@ if __name__ == "__main__":
     start_body_quat = model.body_quat.copy()
     floor_offset = model.body_pos[model.body_name2id('floor')]
 
-    # Neural net training setup
-    # ResNet 50 CNN model
-    resnet = torchvision.models.resnet50(pretrained=False)
-    # Tack on an affine layer to produce a vector of 9 values
-    resnet.fc = nn.Linear(2048, 9)
-    # Load a previously trained set of weights
-    resnet.load_state_dict(torch.load(FLAGS.load_path))
-    # Torch Adam optimizer 
-    optimizer = optim.Adam(resnet.parameters(), lr=1e-4)
+
+    # Neural network setup
+    resnet = tf.keras.applications.ResNet50(include_top=True, weights=None)
+    resnet.layers.pop()
+    resnet.layers.pop()
+    predictions = tf.keras.layers.Dense(9, activation=None, name='predictions')
+    inp = resnet.input
+    out = predictions(resnet.layers[-1].output)
+    resnet = tf.keras.models.Model(inp, out, name="resnet50")
+    #resnet.summary()
+
+    #flatten = tf.keras.layers.Flatten()(resnet.layers[-1].output)
+    #predictions = tf.keras.layers.Dense(9, name='predictions')(flatten)
+    #inp2 = resnet.input
+    #resnet = tf.keras.models.Model(inp2, predictions)
 
     main()
