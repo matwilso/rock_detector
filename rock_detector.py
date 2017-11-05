@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from itertools import count
+import itertools
 import tensorflow as tf
 from arena_modder import ArenaModder
 
@@ -27,7 +27,7 @@ parser.add_argument(
     help="Don't train, just interact with the mujoco sim and visualize everything")
 
 parser.add_argument(
-    '--super_batch', type=int, default=1,
+    '--super_batch', type=int, default=1000,
     help='Number of batches before generating new rocks')
 
 parser.add_argument(
@@ -62,74 +62,56 @@ parser.add_argument(
 # still works as well.  My guess is that with floor it will still be fine
 
 
-def sample_arena(arena_modder):
+def arena_sampler():
     """
     Randomize all relevant parameters, return an image and the ground truth
     labels for the rocks in the image
     """
-    # Randomize (mod) all relevant parameters
-    arena_modder.mod_textures()
-    arena_modder.mod_lights()
-    arena_modder.mod_camera()
-    arena_modder.mod_walls()
-    rock_ground_truth = arena_modder.mod_rocks()
-
-    arena_modder.step()
+    for i in itertools.count(1):
+        # Randomize (mod) all relevant parameters
+        arena_modder.mod_textures()
+        arena_modder.mod_lights()
+        arena_modder.mod_camera()
+        arena_modder.mod_walls()
+        rock_ground_truth = arena_modder.mod_rocks()
     
-    cam_img = arena_modder.get_cam_frame()
-    #cam_img = arena_modder.get_cam_frame(display=True, ground_truth=rock_ground_truth)
+        arena_modder.step()
+        
+        cam_img = arena_modder.get_cam_frame()
+        #cam_img = arena_modder.get_cam_frame(display=True, ground_truth=rock_ground_truth)
+    
+        yield (cam_img, rock_ground_truth)
 
-    return cam_img, rock_ground_truth
+        # If super batch, generate new rocks and reload model
+        if i % FLAGS.super_batch == 0:
+            arena_modder.randrocks()
+
+
+def dataset_input_fn():
+    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32))
+    dataset = dataset.batch(FLAGS.batch_size)
+
+    iterator = dataset.make_one_shot_iterator()
+
+    # `features` is a dictionary in which each value is a batch of values for
+    # that feature; `labels` is a batch of labels.
+    features, labels = iterator.get_next()
+    print(features)
+    return features, labels
 
 
 def main():
-    #global model, sim, tex_modder, cam_modder, light_modder
     x_batch = []
     y_batch = []
     x_frames = []
     y_grounds = []
     batch_count = 0
     last_batch_count = 0
-    
-    for i_step in count(1):
-        # cam_img =  input to neural net
-        # rock_ground_truth = compare to output of neural net to train
-        cam_img, rock_ground_truth = sample_arena(arena_modder)
-        
-        # Wrap camera frame and ground truth measurements in tensorflow Tensors
-        # TODO:
-    
-        # Batch is full, do a network update
-        if i_step % FLAGS.batch_size == 0:
-            batch_count += 1
-            # Stack all the Tensors for this batch, do a forward pass, and compute
-            # the loss
-            x_batch = None
-            y_batch = None
-            #coords_pred = resnet.forward(x_batch)
-            #loss = l2_loss(coords_pred, y_batch)
-            #print(i_step, y_batch.data, coords_pred.data, loss.data[0])
 
-            ## Backward pass and update weights 
-            #optimizer.zero_grad()
-            #loss.backward()
-            #optimizer.step()
-            # Reset batch lists
-            del x_frames[:]
-            del y_grounds[:]
-    
-        # Save weights every x batches
-        if batch_count != last_batch_count and batch_count % FLAGS.save_every == 0:
-            print("saving weights to {}".format(FLAGS.save_path))
-            print("done saving")
+    #value = dataset.make_one_shot_iterator().get_next()
 
-        # If super batch, generate new rocks and reload model
-        if batch_count != last_batch_count and batch_count % FLAGS.super_batch == 0:
-            pass
-            #arena_modder.randrocks()
-            
-        last_batch_count = batch_count
-    
+    est_vgg16.train(input_fn=dataset_input_fn, steps=10)
+
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -150,18 +132,20 @@ if __name__ == "__main__":
     arena_modder = ArenaModder("xmls/nasa/box.xml", blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
     # Neural network setup
-    resnet = tf.keras.applications.ResNet50(include_top=True, weights=None)
-    resnet.layers.pop()
-    resnet.layers.pop()
-    predictions = tf.keras.layers.Dense(9, activation=None, name='predictions')
-    inp = resnet.input
-    out = predictions(resnet.layers[-1].output)
-    resnet = tf.keras.models.Model(inp, out, name="resnet50")
-    #resnet.summary()
 
-    #flatten = tf.keras.layers.Flatten()(resnet.layers[-1].output)
-    #predictions = tf.keras.layers.Dense(9, name='predictions')(flatten)
-    #inp2 = resnet.input
-    #resnet = tf.keras.models.Model(inp2, predictions)
+    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None)
+    keras_vgg16 = tf.keras.models.Sequential()
+    keras_vgg16.add(conv_section)
+    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu"))
+    keras_vgg16.add(tf.keras.layers.Dense(64, activation="relu"))
+    keras_vgg16.add(tf.keras.layers.Dense(9, activation="linear", name="classifier"))
+    keras_vgg16.summary()
+
+    keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
+                          loss='mean_squared_error',
+                          metric='accuracy')
+
+    est_vgg16 = tf.keras.estimator.model_to_estimator(keras_model=keras_vgg16)
+
 
     main()
