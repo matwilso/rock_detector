@@ -88,22 +88,6 @@ def arena_sampler():
         if i % FLAGS.super_batch == 0:
             arena_modder.randrocks()
 
-
-#def dataset_input_fn():
-#    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
-#            (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
-#
-#    #dataset = dataset.batch(FLAGS.batch_size)
-#    print(dataset)
-#
-#    iterator = dataset.make_one_shot_iterator()
-#
-#    # `features` is a dictionary in which each value is a batch of values for
-#    # that feature; `labels` is a batch of labels.
-#    features, labels = iterator.get_next()
-#    return features, labels
-
-
 def main():
     x_batch = []
     y_batch = []
@@ -112,11 +96,7 @@ def main():
     batch_count = 0
     last_batch_count = 0
 
-    #value = dataset.make_one_shot_iterator().get_next()
 
-    #input_fn = tf.contrib.learn.io.generator_io.generator_input_fn(arena_sampler, target_key="ground_truth", batch_size=16, num_epochs=None, shuffle=False)
-
-    est_vgg16.train(input_fn=input_fn, steps=10)
 
 
 if __name__ == "__main__":
@@ -137,25 +117,7 @@ if __name__ == "__main__":
     # Arena modder setup
     arena_modder = ArenaModder("xmls/nasa/box.xml", blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
-    # Neural network setup
 
-    conv_section = tf.keras.applications.VGG16(include_top=True, weights=None)
-    conv_section.layers.pop()
-    conv_section.layers.pop()
-    conv_section.layers.pop()
-
-    keras_vgg16 = tf.keras.models.Sequential()
-    keras_vgg16.add(conv_section)
-    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu"))
-    keras_vgg16.add(tf.keras.layers.Dense(64, activation="relu"))
-    keras_vgg16.add(tf.keras.layers.Dense(9, activation="linear", name="classifier"))
-    keras_vgg16.summary()
-
-    keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
-                          loss='mean_squared_error',
-                          metric='accuracy')
-
-    est_vgg16 = tf.keras.estimator.model_to_estimator(keras_model=keras_vgg16)
 
 
     main()
