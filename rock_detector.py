@@ -88,15 +88,20 @@ def arena_sampler():
 
 
 def dataset_input_fn():
-    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32))
-    dataset = dataset.batch(FLAGS.batch_size)
+    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
+            (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
+
+    #dataset = dataset.batch(FLAGS.batch_size)
+    print(dataset)
 
     iterator = dataset.make_one_shot_iterator()
 
     # `features` is a dictionary in which each value is a batch of values for
     # that feature; `labels` is a batch of labels.
     features, labels = iterator.get_next()
+    import ipdb; ipdb.set_trace()
     print(features)
+    print(labels)
     return features, labels
 
 
