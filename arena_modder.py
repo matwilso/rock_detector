@@ -338,7 +338,7 @@ class ArenaModder(object):
         """
         Pass in rock_mod_cache returned from mod_rocks
 
-        Return single list of 9 elements for positions of all 3 rocks including:
+        Return 1d numpy array of 9 elements for positions of all 3 rocks including:
             - rock x dist from cam
             - rock y dist from cam
             - rock z height from arena floor
@@ -353,8 +353,8 @@ class ArenaModder(object):
         r2_diff = r2_pos - cam_pos
         r3_diff = r3_pos - cam_pos
     
-        ground_truth = []
-        for slot in rock_mod_cache:
+        ground_truth = np.zeros(9, dtype=np.float32)
+        for i, slot in enumerate(rock_mod_cache):
             name = slot[0]
             z_height = slot[1]
     
@@ -365,8 +365,11 @@ class ArenaModder(object):
             if self.visualize:
                 self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
     
-            ground_truth += [diff[0], diff[1], z_height]
+            ground_truth[3*i+0] = diff[0]
+            ground_truth[3*i+1] = diff[1]
+            ground_truth[3*i+2] = z_height
 
+        #print(ground_truth)
         return ground_truth
 
     

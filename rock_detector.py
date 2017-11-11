@@ -78,31 +78,30 @@ def arena_sampler():
         arena_modder.step()
         
         cam_img = arena_modder.get_cam_frame()
+        tf_cam_img = tf.image.convert_image_dtype(cam_img, tf.float32)
+
         #cam_img = arena_modder.get_cam_frame(display=True, ground_truth=rock_ground_truth)
     
-        yield (cam_img, rock_ground_truth)
+        yield {"input_1" : tf_cam_img, "ground_truth": rock_ground_truth}
 
         # If super batch, generate new rocks and reload model
         if i % FLAGS.super_batch == 0:
             arena_modder.randrocks()
 
 
-def dataset_input_fn():
-    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
-            (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
-
-    #dataset = dataset.batch(FLAGS.batch_size)
-    print(dataset)
-
-    iterator = dataset.make_one_shot_iterator()
-
-    # `features` is a dictionary in which each value is a batch of values for
-    # that feature; `labels` is a batch of labels.
-    features, labels = iterator.get_next()
-    import ipdb; ipdb.set_trace()
-    print(features)
-    print(labels)
-    return features, labels
+#def dataset_input_fn():
+#    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
+#            (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
+#
+#    #dataset = dataset.batch(FLAGS.batch_size)
+#    print(dataset)
+#
+#    iterator = dataset.make_one_shot_iterator()
+#
+#    # `features` is a dictionary in which each value is a batch of values for
+#    # that feature; `labels` is a batch of labels.
+#    features, labels = iterator.get_next()
+#    return features, labels
 
 
 def main():
@@ -115,7 +114,9 @@ def main():
 
     #value = dataset.make_one_shot_iterator().get_next()
 
-    est_vgg16.train(input_fn=dataset_input_fn, steps=10)
+    #input_fn = tf.contrib.learn.io.generator_io.generator_input_fn(arena_sampler, target_key="ground_truth", batch_size=16, num_epochs=None, shuffle=False)
+
+    est_vgg16.train(input_fn=input_fn, steps=10)
 
 
 if __name__ == "__main__":
@@ -138,7 +139,11 @@ if __name__ == "__main__":
 
     # Neural network setup
 
-    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None)
+    conv_section = tf.keras.applications.VGG16(include_top=True, weights=None)
+    conv_section.layers.pop()
+    conv_section.layers.pop()
+    conv_section.layers.pop()
+
     keras_vgg16 = tf.keras.models.Sequential()
     keras_vgg16.add(conv_section)
     keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu"))
