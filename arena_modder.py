@@ -369,7 +369,7 @@ class ArenaModder(object):
             ground_truth[3*i+1] = diff[1]
             ground_truth[3*i+2] = z_height
 
-        #print(ground_truth)
+        ##print(ground_truth)
         return ground_truth
 
     

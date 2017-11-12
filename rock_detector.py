@@ -2,6 +2,7 @@
 
 import argparse
 import itertools
+import numpy as np
 import tensorflow as tf
 from arena_modder import ArenaModder
 
@@ -74,34 +75,17 @@ def arena_sampler():
         arena_modder.mod_camera()
         arena_modder.mod_walls()
         rock_ground_truth = arena_modder.mod_rocks()
-    
         arena_modder.step()
         
+        # Grab cam frame and convert pixel value range from (0, 255) to (-0.5, 0.5)
         cam_img = arena_modder.get_cam_frame()
-        tf_cam_img = tf.image.convert_image_dtype(cam_img, tf.float32)
+        cam_img = (cam_img.astype(np.float32) - 127.5) / 255
 
-        #cam_img = arena_modder.get_cam_frame(display=True, ground_truth=rock_ground_truth)
-    
-        yield {"input_1" : tf_cam_img, "ground_truth": rock_ground_truth}
+        yield cam_img, rock_ground_truth
 
         # If super batch, generate new rocks and reload model
         if i % FLAGS.super_batch == 0:
             arena_modder.randrocks()
-
-
-#def dataset_input_fn():
-#    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
-#            (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
-#
-#    #dataset = dataset.batch(FLAGS.batch_size)
-#    print(dataset)
-#
-#    iterator = dataset.make_one_shot_iterator()
-#
-#    # `features` is a dictionary in which each value is a batch of values for
-#    # that feature; `labels` is a batch of labels.
-#    features, labels = iterator.get_next()
-#    return features, labels
 
 
 def main():
@@ -112,11 +96,28 @@ def main():
     batch_count = 0
     last_batch_count = 0
 
-    #value = dataset.make_one_shot_iterator().get_next()
 
-    #input_fn = tf.contrib.learn.io.generator_io.generator_input_fn(arena_sampler, target_key="ground_truth", batch_size=16, num_epochs=None, shuffle=False)
+    sampler = arena_sampler()
+    while True:
+        batch_imgs = []
+        batch_ground_truths = []
+        for i in range(FLAGS.batch_size):
+            cam_img, rock_ground_truth = next(sampler)
 
-    est_vgg16.train(input_fn=input_fn, steps=10)
+            # TODO: test if we can do this batched
+
+            batch_imgs.append(cam_img)
+            batch_ground_truths.append(rock_ground_truth)
+
+
+        cam_imgs = np.stack(batch_imgs)
+        ground_truths = np.stack(batch_ground_truths)
+        
+        print(cam_imgs.shape)
+        print(ground_truths.shape)
+
+        _, curr_loss = sess.run([train, loss], {img_input : cam_imgs, real_output : ground_truths})
+        print(curr_loss)
 
 
 if __name__ == "__main__":
@@ -138,24 +139,33 @@ if __name__ == "__main__":
     arena_modder = ArenaModder("xmls/nasa/box.xml", blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
     # Neural network setup
-
-    conv_section = tf.keras.applications.VGG16(include_top=True, weights=None)
-    conv_section.layers.pop()
-    conv_section.layers.pop()
-    conv_section.layers.pop()
-
+    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
     keras_vgg16 = tf.keras.models.Sequential()
     keras_vgg16.add(conv_section)
-    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu"))
-    keras_vgg16.add(tf.keras.layers.Dense(64, activation="relu"))
-    keras_vgg16.add(tf.keras.layers.Dense(9, activation="linear", name="classifier"))
+    keras_vgg16.add(tf.keras.layers.Flatten())
+    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu", input_shape=(None, 512*7*7), name="fc1"))
+    keras_vgg16.add(tf.keras.layers.Dense(64, activation="relu", name="fc2"))
+    keras_vgg16.add(tf.keras.layers.Dense(9, activation="linear", name="predictions"))
+
     keras_vgg16.summary()
+    #keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
+    #                      loss='mean_squared_error',
+    #                      metric='accuracy')
 
-    keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
-                          loss='mean_squared_error',
-                          metric='accuracy')
-
-    est_vgg16 = tf.keras.estimator.model_to_estimator(keras_model=keras_vgg16)
+    pred_output = keras_vgg16.output
+    img_input = keras_vgg16.input
+    
+    real_output = tf.placeholder(tf.float32, shape=(None, 9), name="real_output")
+    
+    # loss (sum of squares)
+    loss = tf.reduce_sum(tf.square(real_output - pred_output)) 
+    # optimizer
+    optimizer = tf.train.AdamOptimizer(1e-4) # 1e-4 suggested from dom rand paper
+    train = optimizer.minimize(loss)
+    
+    init = tf.global_variables_initializer()
+    sess = tf.Session()
+    sess.run(init)
 
 
     main()
