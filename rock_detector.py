@@ -88,21 +88,20 @@ def arena_sampler():
 
 
 def dataset_input_fn():
-    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.uint8, tf.float32), \
+    dataset = tf.data.Dataset.from_generator(arena_sampler, (tf.float32, tf.float32), \
             (tf.TensorShape([224, 224, 3]), tf.TensorShape([9])))
 
-    #dataset = dataset.batch(FLAGS.batch_size)
+    dataset = dataset.batch(FLAGS.batch_size)
     print(dataset)
 
     iterator = dataset.make_one_shot_iterator()
 
     # `features` is a dictionary in which each value is a batch of values for
-    # that feature; `labels` is a batch of labels.
+    # that feature; `labels` is a batch of labelsi.
     features, labels = iterator.get_next()
-    import ipdb; ipdb.set_trace()
     print(features)
     print(labels)
-    return features, labels
+    return {'input_1' : features}, labels
 
 
 def main():
@@ -138,10 +137,11 @@ if __name__ == "__main__":
 
     # Neural network setup
 
-    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None)
+    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224, 224, 3))
     keras_vgg16 = tf.keras.models.Sequential()
     keras_vgg16.add(conv_section)
-    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu"))
+    keras_vgg16.add(tf.keras.layers.Flatten())
+    keras_vgg16.add(tf.keras.layers.Dense(256, activation="relu", input_shape=(None, 512*7*7), name="fc1"))
     keras_vgg16.add(tf.keras.layers.Dense(64, activation="relu"))
     keras_vgg16.add(tf.keras.layers.Dense(9, activation="linear", name="classifier"))
     keras_vgg16.summary()
