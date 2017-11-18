@@ -72,6 +72,12 @@ def main():
         #print(curr_pred_output)
         #print(curr_loss)
 
+def just_visualize():
+    """Don't do any training, just loop through all the samples"""
+    sampler = arena_sampler()
+    for i in itertools.count(1):
+        next(sampler)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -137,6 +143,10 @@ if __name__ == "__main__":
 
     # Arena modder setup
     arena_modder = ArenaModder("xmls/nasa/box.xml", blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+
+    if FLAGS.visualize:
+        just_visualize()
+        exit(0)
 
     # Neural network setup
     conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
