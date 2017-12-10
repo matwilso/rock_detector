@@ -3,9 +3,9 @@
 Domain randomization to train a convolutional neural net (VGG16) rock 
 detector using Tensorflow and Mujoco, for NASA Robotic Mining Competition
 
-- [Intro](intro)
-- [Get Started + Installation](install)
-- [Mujoco Tips](mujoco)
+- [Intro](#intro)
+- [Get Started + Installation](#install)
+- [Mujoco Tips](#mujoco)
 
 
 <a name="intro"></a>
