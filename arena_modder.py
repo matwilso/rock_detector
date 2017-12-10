@@ -4,6 +4,7 @@ import quaternion
 import skimage
 import matplotlib.pyplot as plt
 
+import mujoco_py
 from mujoco_py import load_model_from_path, MjSim, MjViewer
 from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
 
@@ -107,9 +108,13 @@ DIRT_ANGLE3 = Range3D(DIRT_RROLL, DIRT_RPITCH, DIRT_RYAW)
 
 class ArenaModder(object):
     def __init__(self, filepath, blender_path=None, visualize=False):
+        self._init(filepath, blender_path, visualize)
+
+    def _init(self, filepath, blender_path=None, visualize=False):
+        self.filepath = filepath
+        self.blender_path = blender_path 
         self.model = load_model_from_path(filepath)
         self.sim = MjSim(self.model)
-        self.blender_path = blender_path 
         self.visualize = visualize
 
         # Get start state of params to slightly jitter later
@@ -123,7 +128,10 @@ class ArenaModder(object):
         self.cam_modder = CameraModder(self.sim)
         self.light_modder = LightModder(self.sim)
 
-        self.viewer = MjViewer(self.sim) if self.visualize else None
+        if not hasattr(self, 'viewer'):
+            self.viewer = MjViewer(self.sim) if self.visualize else None
+        else:
+            self.viewer.update_sim(self.sim) if self.visualize else None
 
 
     def step(self):
@@ -381,8 +389,8 @@ class ArenaModder(object):
 
         import subprocess
         subprocess.call([self.blender_path, "--background", "--python", "randrock.py"])
+        self._init(self.filepath, self.blender_path, self.visualize)
 
-        self.model = load_model_from_path("xmls/nasa/box.xml")
-        self.sim = MjSim(self.model)
+
 
 
