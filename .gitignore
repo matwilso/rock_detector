@@ -1,6 +1,7 @@
 *.swp
 assets/add_mesh_rocks/
 xmls/nasa/rock*.stl
+MUJOCO_LOG.TXT
 
 
 # Byte-compiled / optimized / DLL files
