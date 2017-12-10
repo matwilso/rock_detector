@@ -7,7 +7,6 @@ import tensorflow as tf
 from arena_modder import ArenaModder
 from utils import display_image
 
-
 # TODO: verify that the numbers are coming up at the right times
 # TODO: add a seperated loss to view middle loss compared to the edge losses
 # TODO: multithread optimize so that we can feed the neural net faster and
