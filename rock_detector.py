@@ -7,27 +7,29 @@ import tensorflow as tf
 from arena_modder import ArenaModder
 from utils import display_image
 
-# TODO: verify that the numbers are coming up at the right times
+# TODO: add distractor objects to the training, like artifacts of the robot.
+# ...I think this thing will actually be pretty tricky to get right. The 
+# manifold of training is just so small
+
 # TODO: add a seperated loss to view middle loss compared to the edge losses
 # TODO: multithread optimize so that we can feed the neural net faster and
 # we don't have to wait while simulating
 # TODO: merge this together with high-level api
-
 
 # NOTE: 2^2 * 1k images should get decent convergence (about ~4k, ~64k should be bomb)
 # could be about 2 days for full convergence
 
 # TODO: better preproc on the image if necessary (i.e., research this)
 
-# TODO: I should try to run this with and without the floor randomization and see if it
-# still works as well.  My guess is that with floor it will still be fine
+# TODO: I should try to run this with and without the floor randomization and 
+# see if it still works as well.  My guess is that with floor it will still be 
+# fine
 
 def arena_sampler():
     """
     Generator to randomize all relevant parameters, return an image and the 
     ground truth labels for the rocks in the image
     """
-    global arena_modder
     for i in itertools.count(1):
         # Randomize (mod) all relevant parameters
         arena_modder.mod_textures()
@@ -39,7 +41,16 @@ def arena_sampler():
         
         # Grab cam frame and convert pixel value range from (0, 255) to (-0.5, 0.5)
         cam_img = arena_modder.get_cam_frame()
+
+        #for r in rock_ground_truth:
+        #    print('{0:.2f}'.format(r), end=', ')
+        #print()
+        #import matplotlib.pyplot as plt
+        #plt.imshow(cam_img)
+        #plt.show()
+
         cam_img = (cam_img.astype(np.float32) - 127.5) / 255
+
 
         yield cam_img, rock_ground_truth
 
@@ -93,7 +104,7 @@ if __name__ == "__main__":
         default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),'tensorflow/rock_detector'),
         help="Directory to log data for TensorBoard to")
     parser.add_argument(
-        '--log_every', type=int, default=10,
+        '--log_every', type=int, default=100,
         help='Number of batches to run before logging data')
     parser.add_argument(
         '--train_epochs', type=int, default=100,
@@ -126,7 +137,7 @@ if __name__ == "__main__":
         '--blender_path', type=str, default="blender", help='Path to blender executable')
     parser.add_argument(
         '--os', type=str, default="none",
-        help='none (don\'t override any defaults) or mac or ubuntu')
+        help='mac or ubuntu or none (don\'t override any defaults)')
     parser.add_argument(
         '--clean_log', type=bool, default=False,
         help="Delete previous tensorboard logs and start over")
