@@ -10,27 +10,9 @@ from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureM
 
 from utils import preproc_image, display_image
 from utils import Range, Range3D, rto3d # object type things
-from utils import sample, sample_xyz, sample_quat, random_quat, jitter_quat # for randomizing
-
-#from collections import OrderedDict
-
-# TODO [p1]: add some distractor objects, like smaller rocks.  And just the bigger 
-# rocks are the only thing that matters
-
-# TODO: need to add some distractor field of view objects like the arms that were
-# in the shot during the comp.  We may not have any such things, but it would be
-# good to be robust to them
-
-# TODO: Randomize the floor, either by giving it rotation or adding the
-# ocean meshes
+from utils import sample, sample_xyz, sample_quat, random_quat, jitter_quat 
 
 # TODO: set the arena center bin is 0,0
-
-# TODO: do i even really need heights?  Well one thing it does, is if a 
-# non-rock (just a dirt bump) is detected, you can check the height and it will 
-# be low.
-
-
 
 # MODDING PARAMETERS
 # x is left and right
@@ -44,67 +26,13 @@ DIGY = 3.59
 AFZ = 0.0
 ZLOW = 0.3
 ZHIGH = 1.0
-
 SZ_LEN = 1.5
 OBS_LEN = 2.94
 DIG_LEN = 2.94
-SZ_ENDY = BINY + SZ_LEN # start zone end
-CAM_YDELTA = 1.5 
+# start zone end
+SZ_ENDY = BINY + SZ_LEN 
 OBS_SY = SZ_ENDY
 OBS_ENDY = OBS_SY + OBS_LEN
-
-LIGHT_RX = Range(LEFTX, RIGHTX) 
-LIGHT_RY = Range(BINY, DIGY)
-LIGHT_RZ = Range(AFZ, AFZ + ZHIGH)
-LIGHT_RANGE3D = Range3D(LIGHT_RX, LIGHT_RY, LIGHT_RZ)
-LIGHT_DIR3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
-
-CAM_RX = Range(ACX - XOFF, ACX + XOFF) # center of arena +/- 0.5
-CAM_RY = Range(BINY+0.2, SZ_ENDY)
-CAM_RZ = Range(AFZ + ZLOW, AFZ + ZHIGH)
-CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
-
-CAM_RROLL = Range(-95, -85) # think this might actually be yaw
-CAM_RPITCH = Range(65, 90)
-CAM_RYAW = Range(88, 92) # this might actually be pitch, based on coordinate frames
-CAM_ANGLE3 = Range3D(CAM_RROLL, CAM_RPITCH, CAM_RYAW)
-CAM_RFOVY = Range(35, 55)
-
-IMAGE_NOISE_RVARIANCE = Range(0.0, 0.0001)
-
-# Rock placement range parameters
-ROCK_LANEX = 0.4  # width parameters of x range
-OUTER_EXTRA = 0.5 # how much farther rocks should go out on the right and left lanes
-ROCK_BUFFX = 0.2  # distacne between rock lanes
-
-# How far into the obstacle zone the rocks should start.  
-ROCK_START_OFFSET = 0.2  
-MID_START_OFFSET = 0.4 # bit more for middle rock
-
-ROCK_RY = Range(OBS_SY + ROCK_START_OFFSET, OBS_ENDY)
-MID_RY = Range(OBS_SY + MID_START_OFFSET, OBS_ENDY)
-ROCK_RZ = Range(AFZ - 0.02, AFZ + 0.2)
-
-# Position dependent ranges
-LEFT_RX = Range(-3*ROCK_LANEX - OUTER_EXTRA, -ROCK_LANEX - ROCK_BUFFX)
-MID_RX = Range(-ROCK_LANEX, ROCK_LANEX)
-RIGHT_RX = Range(ROCK_BUFFX+ROCK_LANEX, 3*ROCK_LANEX + OUTER_EXTRA)
-
-# Form full 3D sample range
-LEFT_ROCK_RANGE = Range3D(LEFT_RX, ROCK_RY, ROCK_RZ)
-MID_ROCK_RANGE = Range3D(MID_RX, MID_RY, ROCK_RZ)
-RIGHT_ROCK_RANGE = Range3D(RIGHT_RX, ROCK_RY, ROCK_RZ)
-ROCK_RANGES = [LEFT_ROCK_RANGE, MID_ROCK_RANGE, RIGHT_ROCK_RANGE]
-
-DIRT_RX = Range(0.0, 0.3)
-DIRT_RY = Range(0.0, 0.3)
-DIRT_RZ = Range(-0.05, 0.05)
-DIRT_RANGE3D = Range3D(DIRT_RX, DIRT_RY, DIRT_RZ)
-
-DIRT_RROLL = Range(-180, 180)  # yaw
-DIRT_RPITCH = Range(-90, -90)
-DIRT_RYAW = Range(0, 0)  # roll
-DIRT_ANGLE3 = Range3D(DIRT_RROLL, DIRT_RPITCH, DIRT_RYAW)
 
 class ArenaModder(object):
     def __init__(self, filepath, blender_path=None, visualize=False):
@@ -113,6 +41,7 @@ class ArenaModder(object):
     def _init(self, filepath, blender_path=None, visualize=False):
         self.filepath = filepath
         self.blender_path = blender_path 
+
         self.model = load_model_from_path(filepath)
         self.sim = MjSim(self.model)
         self.visualize = visualize
@@ -128,6 +57,7 @@ class ArenaModder(object):
         self.cam_modder = CameraModder(self.sim)
         self.light_modder = LightModder(self.sim)
 
+        #self.viewer = MjViewer(self.sim) if self.visualize else None
         if not hasattr(self, 'viewer'):
             self.viewer = MjViewer(self.sim) if self.visualize else None
         else:
@@ -146,14 +76,13 @@ class ArenaModder(object):
             rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
             cam_pos = self.model.cam_pos[0]
             self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
-
             self.viewer.render()
-
-
+            #import ipdb; ipdb.set_trace()
 
 
     def get_cam_frame(self, display=False, ground_truth=None):
-        """Grab an image from the camera at (224, 244, 3) to feed into CNN"""
+        """Grab an image from the camera (224, 244, 3) to feed into CNN"""
+        IMAGE_NOISE_RVARIANCE = Range(0.0, 0.0001)
 
         cam_img = self.sim.render(1280, 720, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
         image_noise_variance = sample(IMAGE_NOISE_RVARIANCE) 
@@ -172,6 +101,13 @@ class ArenaModder(object):
     
     def mod_lights(self):
         """Randomize pos, direction, and lights"""
+        # light stuff
+        LIGHT_RX = Range(LEFTX, RIGHTX) 
+        LIGHT_RY = Range(BINY, DIGY)
+        LIGHT_RZ = Range(AFZ, AFZ + ZHIGH)
+        LIGHT_RANGE3D = Range3D(LIGHT_RX, LIGHT_RY, LIGHT_RZ)
+        LIGHT_DIR3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
+
         for i, name in enumerate(self.model.light_names):
             # random sample 50% of any given light being on 
             self.light_modder.set_active(name, random.uniform(0, 1) > 0.5)
@@ -186,7 +122,18 @@ class ArenaModder(object):
     
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
-    
+        # Params
+        CAM_RX = Range(ACX - XOFF, ACX + XOFF) # center of arena +/- 0.5
+        CAM_RY = Range(BINY+0.2, SZ_ENDY)
+        CAM_RZ = Range(AFZ + ZLOW, AFZ + ZHIGH)
+        CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
+        CAM_RROLL = Range(-95, -85) # think this might actually be yaw
+        CAM_RPITCH = Range(65, 90)
+        CAM_RYAW = Range(88, 92) # this might actually be pitch, based on coordinate frames
+        CAM_ANGLE3 = Range3D(CAM_RROLL, CAM_RPITCH, CAM_RYAW)
+        CAM_RFOVY = Range(35, 55)
+
+        # Actual mods
         self.cam_modder.set_pos('camera1', sample_xyz(CAM_RANGE3D))
         self.cam_modder.set_quat('camera1', sample_quat(CAM_ANGLE3))
     
@@ -196,22 +143,23 @@ class ArenaModder(object):
     def mod_walls(self):
         """
         Randomize the x, y, and orientation of the walls slights.
-        Also drastically randomize the height of the walls, in many cases they won't
+        Also drastically randomize the height of the walls. In many cases they won't
         be seen at all. This will allow the model to generalize to scenarios without
         walls, or where the walls and geometry is slightly different than the sim 
         model
         """
-    
         for name in self.model.geom_names:
             if name[-4:] != "wall":
                 continue 
+
+#            import ipdb; ipdb.set_trace()
     
             geom_id = self.model.geom_name2id(name)
             body_id = self.model.body_name2id(name)
     
             jitter_x = Range(-0.2, 0.2)
             jitter_y = Range(-0.2, 0.2)
-            jitter_z = Range(-1.0, 0.0)
+            jitter_z = Range(-1.5, 0.0)
             jitter3D = Range3D(jitter_x, jitter_y, jitter_z)
     
             self.model.body_pos[body_id] = self.start_body_pos[body_id] + sample_xyz(jitter3D)
@@ -223,6 +171,16 @@ class ArenaModder(object):
     # Not currently used
     def mod_dirt(self):
         """Randomize position and rotation of dirt"""
+        # dirt stuff
+        DIRT_RX = Range(0.0, 0.3)
+        DIRT_RY = Range(0.0, 0.3)
+        DIRT_RZ = Range(-0.05, 0.05)
+        DIRT_RANGE3D = Range3D(DIRT_RX, DIRT_RY, DIRT_RZ)
+        DIRT_RROLL = Range(-180, 180)  # yaw
+        DIRT_RPITCH = Range(-90, -90)
+        DIRT_RYAW = Range(0, 0)  # roll
+        DIRT_ANGLE3 = Range3D(DIRT_RROLL, DIRT_RPITCH, DIRT_RYAW)
+
         geom_id = self.model.geom_name2id("dirt")
         body_id = self.model.body_name2id("dirt")
         mesh_id = self.model.geom_dataid[geom_id]
@@ -237,7 +195,7 @@ class ArenaModder(object):
         rot_quat = self.model.geom_quat[geom_id]
         rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
     
-        mesh_abs_pos = floor_offset + self.model.body_pos[body_id] + rots
+        mesh_abs_pos = self.floor_offset + self.model.body_pos[body_id] + rots
     
         xy_indexes = mesh_abs_pos[:, 0:2]
         z_heights = mesh_abs_pos[:, 2]
@@ -275,12 +233,33 @@ class ArenaModder(object):
     def mod_rocks(self):
         """
         Randomize the rocks so that the model will generalize to competition rocks
-        This modifications currently being done are:
-            - Randomizing positions
-            - Randomizing orientations
+        This randomizations currently being done are:
+            - Positions (within guesses of competition regions)
+            - Orientations
             - Shuffling the 3 rock meshes so that they can be on the left, middle, or right
             - Generating new random rock meshes every n runs (with Blender)
         """
+        # Rock placement range parameters
+        ROCK_LANEX = 0.4  # width parameters of x range
+        OUTER_EXTRA = 0.5 # how much farther rocks should go out on the right and left lanes
+        ROCK_BUFFX = 0.2  # distacne between rock lanes
+        # How far into the obstacle zone the rocks should start.  
+        ROCK_START_OFFSET = 0.2  
+        MID_START_OFFSET = 0.4 # bit more for middle rock
+        ROCK_RY = Range(OBS_SY + ROCK_START_OFFSET, OBS_ENDY)
+        MID_RY = Range(OBS_SY + MID_START_OFFSET, OBS_ENDY)
+        ROCK_RZ = Range(AFZ - 0.02, AFZ + 0.2)
+        # Position dependent ranges
+        LEFT_RX = Range(-3*ROCK_LANEX - OUTER_EXTRA, -ROCK_LANEX - ROCK_BUFFX)
+        MID_RX = Range(-ROCK_LANEX, ROCK_LANEX)
+        RIGHT_RX = Range(ROCK_BUFFX+ROCK_LANEX, 3*ROCK_LANEX + OUTER_EXTRA)
+        # Form full 3D sample range
+        LEFT_ROCK_RANGE = Range3D(LEFT_RX, ROCK_RY, ROCK_RZ)
+        MID_ROCK_RANGE = Range3D(MID_RX, MID_RY, ROCK_RZ)
+        RIGHT_ROCK_RANGE = Range3D(RIGHT_RX, ROCK_RY, ROCK_RZ)
+        ROCK_RANGES = [LEFT_ROCK_RANGE, MID_ROCK_RANGE, RIGHT_ROCK_RANGE]
+
+        # actual mods
         rock_body_ids = {}
         rock_geom_ids = {}
         rock_mesh_ids = {}
@@ -288,7 +267,7 @@ class ArenaModder(object):
         rot_cache = {}
         #max_height_xys = {}
     
-        #dirt_height_xy = mod_dirt()
+        dirt_height_xy = self.mod_dirt()
     
         for name in self.model.geom_names:
             if name[:4] != "rock":
@@ -301,7 +280,8 @@ class ArenaModder(object):
             rock_body_ids[name] = body_id
             rock_mesh_ids[name] = mesh_id
     
-            # Rotate the rock and get z value of the highest point in the rotated rock mesh
+            # Rotate the rock and get the z value of the highest point in the 
+            # rotated rock mesh
             rot_quat = random_quat()
             vert_adr = self.model.mesh_vertadr[mesh_id]
             vert_num = self.model.mesh_vertnum[mesh_id]
@@ -312,12 +292,11 @@ class ArenaModder(object):
             max_height_idxs[name] =  max_height_idx
             rot_cache[name] = rots
     
-        rock_mod_cache = [] 
     
-        # Randomize the positions of the rocks. 
+        # Shuffle the positions of the rocks (l or m or r)
         shuffle_names = list(rock_body_ids.keys())
         random.shuffle(shuffle_names)
-    
+        rock_mod_cache = [] 
         for i in range(len(shuffle_names)):
             name = shuffle_names[i]
             rots = rot_cache[name]
@@ -326,6 +305,7 @@ class ArenaModder(object):
             max_height_idx = max_height_idxs[name]
             xyz_for_max_z = rots[max_height_idx]
     
+            # xyz coords in global frame
             global_xyz = self.floor_offset + xyz_for_max_z + self.model.body_pos[rock_body_ids[name]]
             gxy = global_xyz[0:2]
             max_height = global_xyz[2] 
@@ -353,6 +333,9 @@ class ArenaModder(object):
         """
         cam_pos = self.model.cam_pos[0]
 
+        #line_pos = self.floor_offset + np.array([0.0, 0.75, 0.0])
+        #self.viewer.add_marker(pos=line_pos)
+
         r1_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock1')]
         r2_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock2')]
         r3_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock3')]
@@ -368,8 +351,8 @@ class ArenaModder(object):
     
             pos = self.floor_offset + self.model.body_pos[self.model.body_name2id(name)]
             diff = pos - cam_pos
-            #text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
-            text = "height:{0:.2f}".format(z_height)
+            text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
+            #text = "height:{0:.2f}".format(z_height)
             if self.visualize:
                 self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
     
@@ -377,10 +360,9 @@ class ArenaModder(object):
             ground_truth[3*i+1] = diff[1]
             ground_truth[3*i+2] = z_height
 
-        ##print(ground_truth)
+        #print(ground_truth)
         return ground_truth
 
-    
     
     def randrocks(self):
         """Generate a new set of 3 random rock meshes using a Blender script"""
@@ -389,7 +371,7 @@ class ArenaModder(object):
 
         import subprocess
         subprocess.call([self.blender_path, "--background", "--python", "randrock.py"])
-        self._init(self.filepath, self.blender_path, self.visualize)
+        #self._init(self.filepath, self.blender_path, self.visualize)
 
 
 

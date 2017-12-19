@@ -11,6 +11,11 @@ import matplotlib.pyplot as plt
 Holds various low level utils for the rock detector training
 
 """
+# PRINTING
+def print_rocks(arr):
+    rocks = np.split(arr, 3)
+    for i, r in enumerate(rocks):
+        print("rock{0:d} x: {1:.2f}, y: {2:.2f}, h: {3:.2f}".format(i+1, r[0], r[1], r[2]))
 
 # IMAGE UTILS
 def preproc_image(img):

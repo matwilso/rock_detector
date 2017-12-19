@@ -30,9 +30,6 @@
 
 		<texture builtin="flat" name="arena_tex" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="arena_mat" shininess="0.03" specular="0.75" texture="arena_tex"></material>
-
-
-
 		<mesh file="nasa_minimal.stl" name="minimal"></mesh>
 		<mesh file="dirt.stl" name="dirt" scale="1.0 1.0 1.0"></mesh>
 		<mesh file="rock1.stl" name="rock1" scale="0.2 0.2 0.2"></mesh>
@@ -54,10 +51,10 @@
 
 	<worldbody>
 	  arbitrary shitton of lights
-	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 -0.1 3" dir="0 -1 -0.5"/>
-	  <light name="light2" diffuse="1.5 1.5 1.5" pos="-2.29 -3.0 3" dir="0 0 -1"/>
-	  <light name="light3" diffuse="1.5 1.5 1.5" pos="-2.29 -2.0 3" dir="0 0 -1"/>
-	  <light name="light4" diffuse="1.5 1.5 1.5" pos="-2.29 -1.0 3" dir="0 0 -1"/>
+	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 -1 -0.5"/>
+	  <light name="light2" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light3" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light4" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light5" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light6" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light7" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
@@ -87,36 +84,42 @@
              <geom name="floor" type="box" size="5.0 5.0 0.05" material="floor_mat"/>
 
 			 <!--
-             <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
+			<body name="marker" pos="0.0 0.75 0.0">
+          	   <geom name="marker" type="box" size="5.00 0.05 0.05" material="bin_mat"/>
+          	</body>
+			-->
 
-			 <body name="dirt" pos="0.0 0 0.0">
-				 <geom name="dirt" mesh="dirt" type="box" size="0.01 0.01 0.01" material="dirt_mat"/>
-			 </body>
+			 <!--
+             <geom name="floor" type="box" size="2.09 3.69 0.05" material="floor_mat"/>
 			 -->
 
+			 <body name="dirt" pos="0.0 0 0.0">
+				 <geom name="dirt" mesh="dirt" type="mesh" size="0.01 0.01 0.01" material="floor_mat"/>
+			 </body>
+
 			 <body name="rock1" pos="-0.5 0 0.0">
-				 <geom name="rock1" mesh="rock1" type="mesh" size="1.0 1.0 1.0" material="rock1_mat"/>
+				 <geom name="rock1" mesh="rock1" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
 			 </body>
 			 <body name="rock2" pos="0 0 0.0">
-				 <geom name="rock2" mesh="rock2" type="mesh" size="1.0 1.0 1.0" material="rock2_mat"/>
+				 <geom name="rock2" mesh="rock2" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
 			 </body>
 			 <body name="rock3" pos="0.5 0 0.0">
-				 <geom name="rock3" mesh="rock3" type="mesh" size="1.0 1.0 1.0" material="rock3_mat"/>
+				 <geom name="rock3" mesh="rock3" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
 			 </body>
           </body>
-		  <body name="left_wall" pos="-4.29 -0.1 0.6">
-             <geom name="left_wall" type="box" size="0.05 3.69 0.65" material="left_mat"/>
+		  <body name="left_wall" pos="-4.49 -0.1 0.6">
+             <geom name="left_wall" type="box" size="0.15 3.69 0.65" material="left_mat"/>
           </body>
-		  <body name="right_wall" pos="-0.1 -0.1 0.6">
-             <geom name="right_wall" type="box" size="0.05 3.69 0.65" material="right_mat"/>
+		  <body name="right_wall" pos="0.1 -0.1 0.6">
+             <geom name="right_wall" type="box" size="0.15 3.69 0.65" material="right_mat"/>
           </body>
 		  <body name="bin_wall" pos="-2.19 -3.79 0.6">
              <geom name="bin_wall" type="box" size="2.09 0.05 0.65" material="bin_mat"/>
           </body>
 		  <body name="dig_wall" pos="-2.19 3.59 0.4">
              <geom name="dig_wall" type="box" size="2.09 0.05 0.45" material="dig_mat"/>
-		 </body>
-		</body>
+	    </body>
+	  </body>
 	</worldbody>
 </mujoco>
 
