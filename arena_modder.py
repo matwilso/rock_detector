@@ -18,7 +18,6 @@ from utils import sample, sample_xyz, sample_quat, random_quat, jitter_quat
 # x is left and right
 # y is back and forth
 ACX = -2.19
-XOFF = 0.5
 LEFTX = -4.29
 RIGHTX = -0.1
 BINY = -3.79
@@ -73,9 +72,10 @@ class ArenaModder(object):
         if self.visualize:
             # Get angle of camera and display it 
             quat = np.quaternion(*self.model.cam_quat[0])
-            rpy = quaternion.as_euler_angles(quat) * 180 / np.pi
+            ypr = quaternion.as_euler_angles(quat) * 180 / np.pi
             cam_pos = self.model.cam_pos[0]
-            self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, rpy))
+            #self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, ypr))
+            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
             self.viewer.render()
             #import ipdb; ipdb.set_trace()
 
@@ -123,14 +123,15 @@ class ArenaModder(object):
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
         # Params
+        XOFF = 1.0
         CAM_RX = Range(ACX - XOFF, ACX + XOFF) # center of arena +/- 0.5
         CAM_RY = Range(BINY+0.2, SZ_ENDY)
         CAM_RZ = Range(AFZ + ZLOW, AFZ + ZHIGH)
         CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
-        CAM_RROLL = Range(-95, -85) # think this might actually be yaw
+        CAM_RYAW = Range(-100, -80) # think this might actually be yaw
         CAM_RPITCH = Range(65, 90)
-        CAM_RYAW = Range(88, 92) # this might actually be pitch, based on coordinate frames
-        CAM_ANGLE3 = Range3D(CAM_RROLL, CAM_RPITCH, CAM_RYAW)
+        CAM_RROLL = Range(88, 92) # this might actually be pitch, based on coordinate frames
+        CAM_ANGLE3 = Range3D(CAM_RYAW, CAM_RPITCH, CAM_RROLL)
         CAM_RFOVY = Range(35, 55)
 
         # Actual mods
@@ -176,11 +177,10 @@ class ArenaModder(object):
         DIRT_RY = Range(0.0, 0.3)
         DIRT_RZ = Range(-0.05, 0.05)
         DIRT_RANGE3D = Range3D(DIRT_RX, DIRT_RY, DIRT_RZ)
-        DIRT_RROLL = Range(-180, 180)  # yaw
+        DIRT_RYAW = Range(-180, 180) 
         DIRT_RPITCH = Range(-90, -90)
-        DIRT_RYAW = Range(0, 0)  # roll
-        DIRT_ANGLE3 = Range3D(DIRT_RROLL, DIRT_RPITCH, DIRT_RYAW)
-
+        DIRT_RROLL = Range(0, 0)  
+        DIRT_ANGLE3 = Range3D(DIRT_RYAW, DIRT_RPITCH, DIRT_RROLL)
         geom_id = self.model.geom_name2id("dirt")
         body_id = self.model.body_name2id("dirt")
         mesh_id = self.model.geom_dataid[geom_id]
@@ -351,14 +351,26 @@ class ArenaModder(object):
     
             pos = self.floor_offset + self.model.body_pos[self.model.body_name2id(name)]
             diff = pos - cam_pos
-            text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(diff[0], diff[1], z_height)
+
+            # Project difference into camera coordinate frame
+            cam_angle = quaternion.as_euler_angles(np.quaternion(*self.model.cam_quat[0]))[0]
+            cam_angle += np.pi/2
+            in_cam_frame = np.zeros_like(diff)
+            x = diff[1]
+            y = -diff[0]
+            in_cam_frame[0] = x * np.cos(cam_angle) + y * np.sin(cam_angle)
+            in_cam_frame[1] = -x * np.sin(cam_angle) + y * np.cos(cam_angle)
+            in_cam_frame[2] = z_height
+            # simple check that change of frame is mathematically valid
+            assert(np.isclose(np.sum(np.square(diff[:2])), np.sum(np.square(in_cam_frame[:2]))))
+            # swap positions to match ROS standard coordinates
+            ground_truth[3*i+0] = in_cam_frame[0]
+            ground_truth[3*i+1] = in_cam_frame[1]
+            ground_truth[3*i+2] = in_cam_frame[2]
+            text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
             #text = "height:{0:.2f}".format(z_height)
             if self.visualize:
                 self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
-    
-            ground_truth[3*i+0] = diff[0]
-            ground_truth[3*i+1] = diff[1]
-            ground_truth[3*i+2] = z_height
 
         #print(ground_truth)
         return ground_truth
