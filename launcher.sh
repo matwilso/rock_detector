@@ -22,8 +22,20 @@ sleep_a_while () {
 }
 shift
 
+blargs="$@"
+#
+#echo "$blargs"
+
+if [[ "$@" != *"super_batch"* ]]; then
+	args="$@ --super_batch 1000"
+else
+	args="$@"
+fi
+
 while true; do
-	./rock_detector.py "$@"  # pass through cmd line args
+	# pass through cmd line args and set super batch default
+	./rock_detector.py $args
+
 	# Save PID of command just launched:
 	last_pid=$!
 	while true; do
