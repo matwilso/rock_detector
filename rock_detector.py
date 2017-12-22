@@ -22,10 +22,6 @@ from queue import Queue
 # manifold of training is just so small; it's going to be hard to cover 
 # everything that I need to.
 
-# TODO: Randomize the floor ocean mesh as well as the rocks. Also probably
-# add the height mapping to take into account buried rocks.  Also check to
-# make sure the meshes look ok
-
 # TODO: add billboard in background with sampled images, including of
 # the actual competition area
 
@@ -59,6 +55,8 @@ from queue import Queue
 
 # Throw data in to feed network 
 data_queue = Queue()
+# If either of the threads crashes, we want to bring down the other
+crash_event = Event()
 # When we have reached a super_batch, we should gen new rocks (with how I had
 # to do it, this requires restarting the progam (see launcher.sh))
 super_batch_event = Event()
@@ -194,20 +192,25 @@ def arena_sampler(arena_modder):
         yield cam_img, rock_ground_truth
 
 def generate_data():
-    # Arena modder setup
-    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+    try:
+        # Arena modder setup
+        arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
-    for i in itertools.count(1):
-        sampler = arena_sampler(arena_modder)
-        (cam_img, rock_ground_truth) = next(sampler)
-        data_queue.put((cam_img, rock_ground_truth))
-        
-        if (data_queue.qsize() != 1):
-            print('queue_size = {}'.format(data_queue.qsize()))
+        for i in itertools.count(1):
+            sampler = arena_sampler(arena_modder)
+            (cam_img, rock_ground_truth) = next(sampler)
+            data_queue.put((cam_img, rock_ground_truth))
+            
+            if (data_queue.qsize() != 1):
+                print('queue_size = {}'.format(data_queue.qsize()))
 
-        if super_batch_event.is_set():
-            arena_modder.randrocks()
-            return
+            if super_batch_event.is_set():
+                arena_modder.randrocks()
+                return
+    except Exception as e:
+        print("CRASH EVENT: {}".format(e))
+        crash_event.set()
+        return 
 
 def summary_plots(grounds, preds):
     """
@@ -317,7 +320,11 @@ def train_loop():
             evaluate()
         if i % FLAGS.super_batch == 0:
             super_batch_event.set()
+            if not FLAGS.threaded:
+                arena_modder.randrocks()
             return 
+        if crash_event.is_set():
+            return
         ##print(ground_truths)
         ##print(pred_output)
         ##print(curr_loss)
@@ -336,9 +343,15 @@ def main():
                 data_thread.join()
                 if super_batch_event.is_set():
                     return
+                if crash_event.is_set():
+                    exit(1)
             train_thread.join()
         else:
             train_loop()
+
+    if crash_event.is_set():
+        exit(1)
+
 
 def just_visualize():
     """Don't do any training, just loop through all the samples"""
@@ -347,6 +360,10 @@ def just_visualize():
     sampler = arena_sampler(arena_modder)
     for i in itertools.count(1):
         next(sampler)
+
+        if i % FLAGS.super_batch == 0:
+            arena_modder.randrocks()
+            return 
 
 if __name__ == '__main__':
     FLAGS = parse_command_line()

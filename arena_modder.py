@@ -214,7 +214,7 @@ class ArenaModder(object):
                 self.model.body_pos[obj_bid] = sample_xyz(left_range)
             else:
                 self.model.body_pos[obj_bid] = sample_xyz(right_range)
-.
+
 
     def mod_extras(self):
         """
@@ -263,67 +263,95 @@ class ArenaModder(object):
                 self.model.body_pos[body_id][2] = -2.0
     
     
-    # TODO: need to get the height of this mesh to calculate rock height off
-    
-    # Not currently used
     def mod_dirt(self):
         """Randomize position and rotation of dirt"""
         # dirt stuff
         DIRT_RX = Range(0.0, 0.3)
         DIRT_RY = Range(0.0, 0.3)
-        DIRT_RZ = Range(-0.05, 0.05)
+        DIRT_RZ = Range(-0.05, 0.03)
         DIRT_RANGE3D = Range3D(DIRT_RX, DIRT_RY, DIRT_RZ)
         DIRT_RYAW = Range(-180, 180) 
-        DIRT_RPITCH = Range(-90, -90)
-        DIRT_RROLL = Range(0, 0)  
+        DIRT_RPITCH = Range(-90.5, -89.5)
+        DIRT_RROLL = Range(-0.5, 0.5)  
         DIRT_ANGLE3 = Range3D(DIRT_RYAW, DIRT_RPITCH, DIRT_RROLL)
-        geom_id = self.model.geom_name2id("dirt")
-        body_id = self.model.body_name2id("dirt")
-        mesh_id = self.model.geom_dataid[geom_id]
+        dirt_bid = self.model.body_name2id("dirt")
+        dirt_gid = self.model.geom_name2id("dirt")
+        dirt_mid = self.model.geom_dataid[dirt_gid]
     
-        self.model.body_pos[body_id] = self.start_body_pos[body_id]  + sample_xyz(DIRT_RANGE3D)
-        self.model.geom_quat[geom_id] = sample_quat(DIRT_ANGLE3)
+        # randomize position and yaw of dirt
+        self.model.body_pos[dirt_bid] = self.start_body_pos[dirt_bid]  + sample_xyz(DIRT_RANGE3D)
+        self.model.geom_quat[dirt_gid] = sample_quat(DIRT_ANGLE3)
         
-        vert_adr = self.model.mesh_vertadr[mesh_id]
-        vert_num = self.model.mesh_vertnum[mesh_id]
+        vert_adr = self.model.mesh_vertadr[dirt_mid]
+        vert_num = self.model.mesh_vertnum[dirt_mid]
         mesh_verts = self.model.mesh_vert[vert_adr : vert_adr+vert_num]
     
-        rot_quat = self.model.geom_quat[geom_id]
+        rot_quat = self.model.geom_quat[dirt_gid]
         rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
     
-        mesh_abs_pos = self.floor_offset + self.model.body_pos[body_id] + rots
+        mesh_abs_pos = self.floor_offset + self.model.body_pos[dirt_bid] + rots
     
-        xy_indexes = mesh_abs_pos[:, 0:2]
-        z_heights = mesh_abs_pos[:, 2]
+        #xy_indexes = mesh_abs_pos[:, 0:2]
+        #z_heights = mesh_abs_pos[:, 2]
     
-        # NOTE: this is not the best method.  It could be that the dirt is placed in a way
-        # that the max height is not the effective max_height of a rock mesh, since it
-        # could be buried.  What would be a better way to do this? 
-        # I could do some subtraction of the rock mesh with the dirt mesh, but this 
-        # becomes quite complicated because the indexing does not line up
-        # This is a decent simple method for now
-    
-        def dirt_height_xy(xy):
-            # Min squared distance
-            z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
-            #print(np.max(mesh_abs_pos, axis=0))
-    
-            height = z_heights[z_index]
 
-            if height < 0 or height > 0.3:
-                height = 0 
-
-            if self.visualize:
-                self.viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
-                self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
-                self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x")
-
-            return height
+        # Return a function that the user can call to get the approximate 
+        # height of an xy location
     
-        def mean_height(xy):
-            return np.maximum(0, np.mean(z_heights[z_heights > 0]))
+        ##def shitty_calculated_height(xy):
+        ##    # NOTE: this is not the best method.  It could be that the dirt is placed in a way # that the max height is not the effective max_height of a rock mesh, since it
+        ##    # could be buried.  What would be a better way to do this? 
+        ##    # I could do some subtraction of the rock mesh with the dirt mesh, but this 
+        ##    # becomes quite complicated because the indexing does not line up
+
+        ##    # Min squared distance
+        ##    z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
+        ##    #print(np.max(mesh_abs_pos, axis=0))
     
-        return mean_height
+        ##    height = z_heights[z_index]
+
+        ##    if height < 0 or height > 0.3:
+        ##        height = 0 
+
+        ##    if self.visualize:
+        ##        self.viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+        ##        self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
+        ##        self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x")
+        ##    return height
+
+        ##def mean_height(xy):
+        ##    return np.mean(z_heights[z_heights > 0]) # average all greater than 0 height vals
+
+        def local_mean_height(xy):
+            """
+            Take an xy coordinate, and the approximate z height of the mesh at that
+            location. It works decently.
+
+            Uses a weighted average mean of all points within a threshold of xy.
+            """
+            # grab all mesh points within threshold euclidean distance of xy
+            gt0_xyz = mesh_abs_pos[mesh_abs_pos[:,2] > 0.01]
+            eudists = np.sum(np.square(gt0_xyz[:,0:2] - xy), axis=1)
+            indices =  eudists < 0.1
+            close_xyz = gt0_xyz[indices]
+
+            # if there are any nearby points above 0
+            if np.count_nonzero(close_xyz[:, 2]) > 0:
+                # weights for weighted sum. closer points to xy have higher weight 
+                weights = 1 / (eudists[indices]) 
+                weights = np.expand_dims(weights / np.sum(weights), axis=1)
+                pos = np.sum(close_xyz * weights, axis=0)
+
+                # show an "o" and a marker where the height is
+                if self.visualize:
+                    self.viewer.add_marker(pos=pos, label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+                
+                # approximate z height of ground
+                return pos[2]
+            else:
+                return 0
+
+        return local_mean_height
     
     
     def mod_rocks(self):
@@ -409,8 +437,8 @@ class ArenaModder(object):
             if self.visualize:
                 self.viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
     
-            #dirt_z = dirt_height_xy(gxy)
-            dirt_z = 0
+            dirt_z = dirt_height_xy(gxy)
+            #dirt_z = 0
             #print(name, dirt_z)
     
             z_height = max_height - dirt_z

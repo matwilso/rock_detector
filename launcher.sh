@@ -17,14 +17,8 @@ trap control_c SIGINT
 
 
 signal=KILL
-sleep_a_while () {
-    sleep 1s
-}
-shift
 
-blargs="$@"
-#
-#echo "$blargs"
+shift
 
 if [[ "$@" != *"super_batch"* ]]; then
 	args="$@ --super_batch 1000"
@@ -38,13 +32,13 @@ while true; do
 
 	# Save PID of command just launched:
 	last_pid=$!
-	while true; do
-	    # See if the command is still running
-	    if ps -p $last_pid -o comm= | grep -qs '^rock_detector.py$'; then
-	        sleep_a_while
-		else
-			# Go back to the beginning and launch the command again
-			break
-	    fi
-	done
+
+	wait $last_pid
+	exit_status=$?
+	echo "EXIT STATE: $exit_status"
+	
+	if [[ $exit_status != 0 ]]; then
+		echo "EXIT"
+		exit;
+	fi
 done

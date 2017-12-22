@@ -3,6 +3,7 @@ weights/*
 assets/add_mesh_rocks/
 assets/images/
 xmls/nasa/meshes/rock*.stl
+xmls/nasa/meshes/dirt*.stl
 MUJOCO_LOG.TXT
 
 

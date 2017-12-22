@@ -56,9 +56,10 @@ def display_image(cam_img, label):
 # OBJECT TYPE THINGS
 def Range(min, max):
     """Return 1d numpy array of with min and max"""
-    if min < max:
+    if min <= max:
         return np.array([min, max])
     else:
+        print("WARNING: min {} was greater than max {}".format(min, max))
         return np.array([max, min])
 
 def Range3D(x, y, z):

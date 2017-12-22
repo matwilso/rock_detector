@@ -99,10 +99,8 @@ def make_settings():
 
     return settings
 
-
 context = bpy.context
 settings = make_settings()
-
 
 for i in range(3):
     bpy.ops.object.select_all(action='SELECT')
@@ -112,7 +110,7 @@ for i in range(3):
     #import pdb; pdb.set_trace()
     #print(bpy.data.objects)
 
-    rock_name = bpy.data.objects.keys()[0]
+    #rock_name = bpy.data.objects.keys()[0]
     #bpy.data.objects[rock_name].location.x = 0
     #bpy.data.objects[rock_name].location.y = 0
     #bpy.data.objects[rock_name].location.z = 0
@@ -123,3 +121,12 @@ for i in range(3):
     #bpy.ops.object.modifier_apply(apply_as="DATA")
     
     bpy.ops.export_mesh.stl(filepath="xmls/nasa/meshes/rock{}.stl".format(i), check_existing=False)
+
+
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete()
+
+rockgen.generateRocks(*settings["Fake Ocean"])
+bpy.ops.export_mesh.stl(filepath="xmls/nasa/meshes/dirt.stl", check_existing=False)
+
+
