@@ -11,6 +11,16 @@ import matplotlib.pyplot as plt
 Holds various low level utils for the rock detector training
 
 """
+def str2bool(v):
+    """For argparse"""
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 # PRINTING
 def print_rocks(arr):
     rocks = np.split(arr, 3)
@@ -67,6 +77,10 @@ def sample(num_range, as_int=False):
         return int(samp)
     else:
         return samp
+
+def sample_geom_type():
+    """Sample a mujoco geom type (range 3-6 capsule-box)"""
+    return random.randrange(3,7)
 
 def sample_xyz(range3d):
     """Sample 3 floats in the 3 num_ranges"""

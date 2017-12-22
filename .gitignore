@@ -2,7 +2,7 @@ weights/*
 *.swp
 assets/add_mesh_rocks/
 assets/images/
-xmls/nasa/rock*.stl
+xmls/nasa/meshes/rock*.stl
 MUJOCO_LOG.TXT
 
 

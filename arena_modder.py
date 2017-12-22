@@ -10,9 +10,12 @@ from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureM
 
 from utils import preproc_image, display_image
 from utils import Range, Range3D, rto3d # object type things
-from utils import sample, sample_xyz, sample_quat, random_quat, jitter_quat 
+from utils import sample, sample_xyz, sample_quat, sample_geom_type, random_quat, jitter_quat 
 
 # TODO: set the arena center bin is 0,0
+
+# gid = geom_id
+# bid = body_id
 
 # MODDING PARAMETERS
 # x is left and right
@@ -50,6 +53,7 @@ class ArenaModder(object):
         self.start_geom_quat = self.model.geom_quat.copy()
         self.start_body_pos = self.model.body_pos.copy()
         self.start_body_quat = self.model.body_quat.copy()
+        self.start_matid = self.model.geom_matid.copy()
         self.floor_offset = self.model.body_pos[self.model.body_name2id('floor')]
 
         self.tex_modder = TextureModder(self.sim)
@@ -128,11 +132,20 @@ class ArenaModder(object):
         CAM_RY = Range(BINY+0.2, SZ_ENDY)
         CAM_RZ = Range(AFZ + ZLOW, AFZ + ZHIGH)
         CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
-        CAM_RYAW = Range(-100, -80) # think this might actually be yaw
+        CAM_RYAW = Range(-100, -80)
         CAM_RPITCH = Range(65, 90)
-        CAM_RROLL = Range(88, 92) # this might actually be pitch, based on coordinate frames
+        CAM_RROLL = Range(88, 92) # this might actually be pitch?
         CAM_ANGLE3 = Range3D(CAM_RYAW, CAM_RPITCH, CAM_RROLL)
-        CAM_RFOVY = Range(35, 55)
+
+        # "The horizontal field of view is computed automatically given the 
+        # window size and the vertical field of view." - Mujoco
+        # This range was calculated using: themetalmuncher.github.io/fov-calc/
+        # ZED has 110° hfov --> 78° vfov, Logitech C920 has 78° hfov ---> 49° vfov
+        # These were rounded all the way down to 40° and up to 80°, but then 
+        # it starts to look pretty bad in the upper range, I dialed it back a 
+        # Hopefully the range will be enough to make the model resistant to 
+        # these changes.
+        CAM_RFOVY = Range(40, 60)
 
         # Actual mods
         self.cam_modder.set_pos('camera1', sample_xyz(CAM_RANGE3D))
@@ -140,6 +153,89 @@ class ArenaModder(object):
     
         fovy = sample(CAM_RFOVY)
         self.cam_modder.set_fovy('camera1', fovy)
+
+    
+    def mod_extra_distractors(self):
+        """mod rocks and tools on the side of the arena"""
+        # TODO: I might consider changing these to look like rocks instead of 
+        # just random shapes.  It just looks weird to me right now.  Ok for now,
+        # but it seems a bit off.
+        Z_JITTER = 0.05
+        OBJ_XRANGE = Range(0.01, 0.09)
+        OBJ_YRANGE = Range(0.01, 0.09)
+        OBJ_ZRANGE = Range(0.01, 0.09)
+        OBJ_SIZE_RANGE = Range3D(OBJ_XRANGE, OBJ_YRANGE, OBJ_ZRANGE)
+
+        floor_gid = self.model.geom_name2id("floor")
+
+        #import ipdb; ipdb.set_trace()
+        left_body_id = self.model.body_name2id("left_wall")
+        left_geom_id = self.model.geom_name2id("left_wall")
+        right_body_id = self.model.body_name2id("right_wall")
+        right_geom_id = self.model.geom_name2id("right_wall")
+
+        left_center = self.model.body_pos[left_body_id]
+        left_geo = self.model.geom_size[left_geom_id]
+        left_height = left_center[2] + left_geo[2]
+        left_xrange = Range(left_center[0]-left_geo[0], left_center[0]+left_geo[0])
+        left_yrange = Range(left_center[1]-left_geo[1], left_center[1]+left_geo[1])
+        left_zrange = 0.02+Range(left_height-Z_JITTER, left_height+Z_JITTER)
+        left_range = Range3D(left_xrange, left_yrange, left_zrange)
+
+        right_center = self.model.body_pos[right_body_id]
+        right_geo = self.model.geom_size[right_geom_id]
+        right_height = right_center[2] + right_geo[2]
+        right_xrange = Range(right_center[0]-right_geo[0], right_center[0]+right_geo[0])
+        right_yrange = Range(right_center[1]-right_geo[1], right_center[1]+right_geo[1])
+        right_zrange = 0.02+Range(right_height-Z_JITTER, right_height+Z_JITTER)
+        right_range = Range3D(right_xrange, right_yrange, right_zrange)
+
+        for i in range(20):
+            name = "distract{}".format(i)
+            obj_bid = self.model.body_name2id(name)
+            obj_gid = self.model.geom_name2id(name)
+            self.model.geom_quat[obj_gid] = random_quat()
+            self.model.geom_size[obj_gid] = sample_xyz(OBJ_SIZE_RANGE)
+            self.model.geom_type[obj_gid] = sample_geom_type()
+
+            # 50% chance of invisible 
+            if sample([0,1]) > 0.5:
+                self.model.geom_rgba[obj_gid][-1] = 0.0
+            else:
+                self.model.geom_rgba[obj_gid][-1] = 1.0
+            ## 50% chance of same color as floor and rocks 
+            if sample([0,1]) > 0.5:
+                self.model.geom_matid[obj_gid] = self.model.geom_matid[floor_gid]
+            else:
+                self.model.geom_matid[obj_gid] = self.start_matid[obj_gid]
+
+            # 10 always on the left, 10 always on the right
+            if i < 10:
+                self.model.body_pos[obj_bid] = sample_xyz(left_range)
+            else:
+                self.model.body_pos[obj_bid] = sample_xyz(right_range)
+.
+
+    def mod_extras(self):
+        """
+        Randomize extra properties of the world such as the extra rocks on the side
+        of the arena wal
+
+        
+        The motivation for these mods are that it seems likely that these distractor 
+        objects could degrade the performance of the detector. 
+
+        Artifacts:
+        - Rocks and tools on edges of bin
+        - NASA judges around the perimeter
+        - Background arena structure and crowd 
+        - Bright light around edges of arena
+        """
+        self.mod_extra_distractors()
+        # TODO: mod NASA judges around the perimeter of the arena
+        # TODO: add some billboards in the back that are more realistic scenes to not
+        # get distrcated by 
+        # maybe TODO: mod the extra external lights around the arena
     
     def mod_walls(self):
         """
@@ -152,19 +248,19 @@ class ArenaModder(object):
         for name in self.model.geom_names:
             if name[-4:] != "wall":
                 continue 
-
-#            import ipdb; ipdb.set_trace()
     
             geom_id = self.model.geom_name2id(name)
             body_id = self.model.body_name2id(name)
     
             jitter_x = Range(-0.2, 0.2)
             jitter_y = Range(-0.2, 0.2)
-            jitter_z = Range(-1.5, 0.0)
+            jitter_z = Range(-0.75, 0.0)
             jitter3D = Range3D(jitter_x, jitter_y, jitter_z)
     
             self.model.body_pos[body_id] = self.start_body_pos[body_id] + sample_xyz(jitter3D)
             self.model.body_quat[body_id] = jitter_quat(self.start_body_quat[body_id], 0.005)
+            if sample([0,1]) > 0.95:
+                self.model.body_pos[body_id][2] = -2.0
     
     
     # TODO: need to get the height of this mesh to calculate rock height off
@@ -336,13 +432,13 @@ class ArenaModder(object):
         #line_pos = self.floor_offset + np.array([0.0, 0.75, 0.0])
         #self.viewer.add_marker(pos=line_pos)
 
+        r0_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock0')]
         r1_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock1')]
         r2_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock2')]
-        r3_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock3')]
     
         r1_diff = r1_pos - cam_pos
         r2_diff = r2_pos - cam_pos
-        r3_diff = r3_pos - cam_pos
+        r0_diff = r0_pos - cam_pos
     
         ground_truth = np.zeros(9, dtype=np.float32)
         for i, slot in enumerate(rock_mod_cache):

@@ -6,9 +6,9 @@
 	</visual>
 	<asset>
 		<texture name="dirt_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture name="rock0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<texture name="rock3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="floor_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="left_tex"  builtin="flat"  height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="right_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -18,9 +18,9 @@
                  width="256" height="256"/>
 
 		<material name="dirt_mat" shininess="0.03" specular="0.75" texture="dirt_tex"></material>
+		<material name="rock0_mat" shininess="0.03" specular="0.75" texture="rock0_tex"></material>
 		<material name="rock1_mat" shininess="0.03" specular="0.75" texture="rock1_tex"></material>
 		<material name="rock2_mat" shininess="0.03" specular="0.75" texture="rock2_tex"></material>
-		<material name="rock3_mat" shininess="0.03" specular="0.75" texture="rock3_tex"></material>
 		<material name="floor_mat" shininess="0.03" specular="0.75" texture="floor_tex"></material>
 		<material name="left_mat" shininess="0.03" specular="0.75" texture="left_tex"></material>
 		<material name="right_mat" shininess="0.03" specular="0.75" texture="right_tex"></material>
@@ -30,11 +30,15 @@
 
 		<texture builtin="flat" name="arena_tex" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="arena_mat" shininess="0.03" specular="0.75" texture="arena_tex"></material>
-		<mesh file="nasa_minimal.stl" name="minimal"></mesh>
-		<mesh file="dirt.stl" name="dirt" scale="1.0 1.0 1.0"></mesh>
-		<mesh file="rock1.stl" name="rock1" scale="0.2 0.2 0.2"></mesh>
-		<mesh file="rock2.stl" name="rock2" scale="0.2 0.2 0.2"></mesh>
-		<mesh file="rock3.stl" name="rock3" scale="0.2 0.2 0.2"></mesh>
+
+		<include file="include/distract_assets.xml"></include>
+		<!--
+		<mesh file="meshes/nasa_minimal.stl" name="minimal"></mesh>
+		-->
+		<mesh file="meshes/dirt.stl" name="dirt" scale="1.0 1.0 1.0"></mesh>
+		<mesh file="meshes/rock0.stl" name="rock0" scale="0.2 0.2 0.2"></mesh>
+		<mesh file="meshes/rock1.stl" name="rock1" scale="0.2 0.2 0.2"></mesh>
+		<mesh file="meshes/rock2.stl" name="rock2" scale="0.2 0.2 0.2"></mesh>
 	</asset>
 
 	<default>
@@ -96,15 +100,14 @@
 			 <body name="dirt" pos="0.0 0 0.0">
 				 <geom name="dirt" mesh="dirt" type="mesh" size="0.01 0.01 0.01" material="floor_mat"/>
 			 </body>
-
+			 <body name="rock0" pos="0.5 0 0.0">
+				 <geom name="rock0" mesh="rock0" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
+			 </body>
 			 <body name="rock1" pos="-0.5 0 0.0">
 				 <geom name="rock1" mesh="rock1" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
 			 </body>
 			 <body name="rock2" pos="0 0 0.0">
 				 <geom name="rock2" mesh="rock2" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
-			 </body>
-			 <body name="rock3" pos="0.5 0 0.0">
-				 <geom name="rock3" mesh="rock3" type="mesh" size="1.0 1.0 1.0" material="floor_mat"/>
 			 </body>
           </body>
 		  <body name="left_wall" pos="-4.49 -0.1 0.6">
@@ -119,6 +122,7 @@
 		  <body name="dig_wall" pos="-2.19 3.59 0.4">
              <geom name="dig_wall" type="box" size="2.09 0.05 0.45" material="dig_mat"/>
 	    </body>
+		<include file="include/distract_bodies.xml"></include>
 	  </body>
 	</worldbody>
 </mujoco>

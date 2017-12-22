@@ -8,7 +8,7 @@ import yaml
 import numpy as np
 import tensorflow as tf
 from arena_modder import ArenaModder
-from utils import display_image, preproc_image, print_rocks
+from utils import display_image, preproc_image, print_rocks, str2bool
 import matplotlib.pyplot as plt
 from threading import Thread, Event
 from queue import Queue
@@ -16,7 +16,8 @@ from queue import Queue
 # TODO: create some verification images with ground truths that you know,
 # using Gazebo or Bullet or (preferably) in the real world
 
-# TODO: add distractor objects to the training, like artifacts of the robot.
+# TODO: (arena_modder.mod_extras) add distractor objects to the training, like 
+# artifacts of the robot.
 # ...I think this project will actually be pretty tricky to get right. The 
 # manifold of training is just so small; it's going to be hard to cover 
 # everything that I need to.
@@ -25,13 +26,12 @@ from queue import Queue
 # add the height mapping to take into account buried rocks.  Also check to
 # make sure the meshes look ok
 
-# TODO: add some distractors to the tops of the walls
-
 # TODO: add billboard in background with sampled images, including of
 # the actual competition area
 
-# TODO: multithread optimize so that we can feed the neural net faster and
-# we don't have to wait while simulating/sim pool so I can simulate multiple things at once, because that is my biggest bottleneck
+# TODO: setup random seeding for the training to make sure experiments are consistent
+
+# TODO: sim pool so I can simulate multiple things at once, because that is my biggest bottleneck
 
 # TODO: better preproc (stats wise) on the image if necessary (i.e., research this)
 
@@ -41,12 +41,19 @@ from queue import Queue
 # TODO: add a seperated loss to view middle loss compared to the edge losses
 
 # TODO: I should try to run this with and without the floor randomization and 
-# see if it still works as well.  My guess is that with floor it will still be 
-# fine
+# see if it still works as well.  My guess is that without floor rando, it won't 
+# work well irl
 
 # TODO: merge this together with high-level api
 
 # TODO: add some notes on what this detector is robust to
+
+# TODO: at some point, go and clean up the organization of this repo
+
+# TODO: write code to automatically run several ablation tests (no walls, etc)
+
+# TODO: make blender optional.  Generate fake rocks by overlapping a bunch of Mujoco
+# primitives together and blending it each round
 
 # NOTE: For a simpler task, they used 2^2 * 1k images. to get decent convergence (about ~4k, ~64k should be bomb). could be about 2 days for full convergence
 
@@ -75,7 +82,7 @@ def parse_command_line():
         '--batch_size', type=int, default=24,
         help='Batch size for training and evaluation.')
     parser.add_argument(
-        '--visualize', type=bool, default=False,
+        '--visualize', type=str2bool, default=False,
         help="Don't train, just interact with the mujoco sim and visualize everything")
     parser.add_argument(
         '--super_batch', type=int, default=9223372036854775807,
@@ -101,19 +108,22 @@ def parse_command_line():
         '--os', type=str, default='none',
         help='mac or ubuntu or none (don\'t override any defaults)')
     parser.add_argument(
-        '--clean_log', type=bool, default=False,
+        '--clean_log', type=str2bool, default=False,
         help='Delete previous tensorboard logs and start over')
     parser.add_argument(
-        '--eval', type=bool, default=True,
+        '--eval', type=str2bool, default=True,
         help='Evaluate on test images')
     parser.add_argument(
-        '--freeze_conv', type=bool, default=False,
+        '--freeze_conv', type=str2bool, default=False,
         help='Evaluate on test images')
+    parser.add_argument(
+        '--threaded', type=str2bool, default=True,
+        help='Multithread image generation and model training')
 
     # Parse command line arguments
-    args, _ = parser.parse_known_args()
-    print(args)
-    return args
+    FLAGS, _ = parser.parse_known_args()
+    print(FLAGS)
+    return FLAGS
 
 
 def evaluate():
@@ -133,8 +143,8 @@ def evaluate():
 
     # Split by batch size so we fit in GPU memory. Issue is how do you 
     # add 2 summaries together?
-    ##batch_split_imgs = [test_imgs[i:i+args.batch_size] for i in range(0, len(test_imgs),args.batch_size)]
-    ##batch_split_truths = [test_truths[i:i+args.batch_size] for i in range(0, len(test_truths),args.batch_size)]
+    ##batch_split_imgs = [test_imgs[i:i+FLAGS.batch_size] for i in range(0, len(test_imgs),FLAGS.batch_size)]
+    ##batch_split_truths = [test_truths[i:i+FLAGS.batch_size] for i in range(0, len(test_truths),FLAGS.batch_size)]
 
     ##for i in range(len(batch_split_imgs)):
     ##    test_batch_imgs = np.stack(batch_split_imgs[0])
@@ -164,28 +174,28 @@ def arena_sampler(arena_modder):
         arena_modder.mod_lights()
         arena_modder.mod_camera()
         arena_modder.mod_walls()
+        arena_modder.mod_extras()
         rock_ground_truth = arena_modder.mod_rocks()
         arena_modder.step()
         
         # Grab cam frame and convert pixel value range from (0, 255) to (-0.5, 0.5)
         cam_img = arena_modder.get_cam_frame()
+        ##camid = arena_modder.cam_modder.get_camid('camera1')
+        ##cam_fovy = arena_modder.model.cam_fovy[camid]
+        ##display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
 
-        #display_image(cam_img, rock_ground_truth)
-
-
-        #for r in rock_ground_truth:
-        #    print('{0:.2f}'.format(r), end=', ')
-        #print()
-        #import matplotlib.pyplot as plt
-        #plt.imshow(cam_img)
-        #plt.show()
+        ##for r in rock_ground_truth:
+        ##    print('{0:.2f}'.format(r), end=', ')
+        ##print()
+        ##plt.imshow(cam_img)
+        ##plt.show()
 
         cam_img = (cam_img.astype(np.float32) - 127.5) / 255
         yield cam_img, rock_ground_truth
 
 def generate_data():
     # Arena modder setup
-    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=args.blender_path, visualize=args.visualize)
+    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
     for i in itertools.count(1):
         sampler = arena_sampler(arena_modder)
@@ -207,7 +217,7 @@ def summary_plots(grounds, preds):
     """
     ground_summary_hist.append(grounds[0])
     pred_summary_hist.append(preds[0])
-    with open(args.logdir+'summary.pkl', 'wb') as f:
+    with open(FLAGS.logdir+'summary.pkl', 'wb') as f:
         pickle.dump((ground_summary_hist, pred_summary_hist), f)
 
     glxs = [g[0] for g in ground_summary_hist]
@@ -266,22 +276,31 @@ def summary_plots(grounds, preds):
 
     return X, Y, H
 
-
 def train_loop():
+    if not FLAGS.threaded:
+        # Arena modder setup
+        arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+        sampler = arena_sampler(arena_modder)
+
     for i in itertools.count(1):
-    #for i in range(50):
         batch_imgs = []
         batch_ground_truths = []
 
-        for _ in range(args.batch_size):
-            cam_img, rock_ground_truth = data_queue.get()
-            batch_imgs.append(cam_img)
-            batch_ground_truths.append(rock_ground_truth)
+        if FLAGS.threaded:
+            for _ in range(FLAGS.batch_size):
+                cam_img, rock_ground_truth = data_queue.get()
+                batch_imgs.append(cam_img)
+                batch_ground_truths.append(rock_ground_truth)
+        else:
+            for _ in range(FLAGS.batch_size):
+                cam_img, rock_ground_truth = next(sampler)
+                batch_imgs.append(cam_img)
+                batch_ground_truths.append(rock_ground_truth)
 
         cam_imgs = np.stack(batch_imgs)
         ground_truths = np.stack(batch_ground_truths)
 
-        if i % args.log_every != 0:
+        if i % FLAGS.log_every != 0:
             _, curr_loss, pred_output = sess.run([train_op, loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
@@ -291,12 +310,12 @@ def train_loop():
             psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
             train_writer.add_summary(psumm, i)
 
-        if i % args.save_every == 0:
-            save_path = saver.save(sess, args.save_path)
-            print('Model saved in file: %s' % args.save_path)
-        if args.eval and i % args.eval_every == 0:
+        if i % FLAGS.save_every == 0:
+            save_path = saver.save(sess, FLAGS.save_path)
+            print('Model saved in file: %s' % FLAGS.save_path)
+        if FLAGS.eval and i % FLAGS.eval_every == 0:
             evaluate()
-        if i % args.super_batch == 0:
+        if i % FLAGS.super_batch == 0:
             super_batch_event.set()
             return 
         ##print(ground_truths)
@@ -304,44 +323,46 @@ def train_loop():
         ##print(curr_loss)
 
 def main():
-    if args.eval and args.eval_every == -1:
+    if FLAGS.eval and FLAGS.eval_every == -1:
         evaluate()
     else:
-        # start the chain thread
-        train_thread = Thread(target=train_loop, daemon=True)
-        train_thread.start()
-        while True:
-            data_thread = Thread(target=generate_data, daemon=True)
-            data_thread.start()
-            data_thread.join()
-            if super_batch_event.is_set():
-                return
-
-        train_thread.join()
+        if FLAGS.threaded:
+            # start the chain thread
+            train_thread = Thread(target=train_loop, daemon=True)
+            train_thread.start()
+            while True:
+                data_thread = Thread(target=generate_data, daemon=True)
+                data_thread.start()
+                data_thread.join()
+                if super_batch_event.is_set():
+                    return
+            train_thread.join()
+        else:
+            train_loop()
 
 def just_visualize():
     """Don't do any training, just loop through all the samples"""
     # Arena modder setup
-    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=args.blender_path, visualize=args.visualize)
+    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
     sampler = arena_sampler(arena_modder)
     for i in itertools.count(1):
         next(sampler)
 
 if __name__ == '__main__':
-    args = parse_command_line()
-    if args.os == 'mac':
-        args.blender_path = '/Applications/blender.app/Contents/MacOS/blender'
-    if args.os == 'ubuntu':
-        args.blender_path = 'blender'
+    FLAGS = parse_command_line()
+    if FLAGS.os == 'mac':
+        FLAGS.blender_path = '/Applications/blender.app/Contents/MacOS/blender'
+    if FLAGS.os == 'ubuntu':
+        FLAGS.blender_path = 'blender'
 
-    if args.visualize:
+    if FLAGS.visualize:
         just_visualize()
         exit(0)
 
     # try to load summary histories from file
-    if os.path.isfile(args.logdir+'summary.pkl'):
+    if os.path.isfile(FLAGS.logdir+'summary.pkl'):
         try:
-            with open(args.logdir+'summary.pkl', 'rb') as f:
+            with open(FLAGS.logdir+'summary.pkl', 'rb') as f:
                 ground_summary_hist, pred_summary_hist = pickle.load(f)
         except:
             ground_summary_hist = []
@@ -350,13 +371,13 @@ if __name__ == '__main__':
         ground_summary_hist = []
         pred_summary_hist = []
 
-    if args.clean_log:
+    if FLAGS.clean_log:
         ground_summary_hist = []
         pred_summary_hist = []
         # Delete and remake log dir if it already exists 
-        if tf.gfile.Exists(args.logdir):
-          tf.gfile.DeleteRecursively(args.logdir)
-    tf.gfile.MakeDirs(args.logdir)
+        if tf.gfile.Exists(FLAGS.logdir):
+          tf.gfile.DeleteRecursively(FLAGS.logdir)
+    tf.gfile.MakeDirs(FLAGS.logdir)
 
     #with tf.device('/device:GPU:0'):
     # Neural network setup
@@ -384,7 +405,7 @@ if __name__ == '__main__':
     optimizer = tf.train.AdamOptimizer(1e-4) # 1e-4 suggested from dom rand paper
 
     # only train last layers
-    if args.freeze_conv: 
+    if FLAGS.freeze_conv: 
         last_layers = tf.trainable_variables('(?![block.*conv.*])')
         train_op = optimizer.minimize(loss, var_list=last_layers)
     else:
@@ -405,15 +426,15 @@ if __name__ == '__main__':
     plot_summary = tf.summary.merge([x_summary_plot, y_summary_plot, h_summary_plot])
     sess = tf.Session()
 
-    train_writer = tf.summary.FileWriter(args.logdir + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter(args.logdir + '/test')
+    train_writer = tf.summary.FileWriter(FLAGS.logdir + '/train', sess.graph)
+    test_writer = tf.summary.FileWriter(FLAGS.logdir + '/test')
     
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
 
-    if args.load_path != '0':
-        saver.restore(sess,  args.load_path)
-        print('Model restored from '+args.load_path)
+    if FLAGS.load_path != '0':
+        saver.restore(sess,  FLAGS.load_path)
+        print('Model restored from '+FLAGS.load_path)
     else:
         # Initialize all variables
         init = tf.global_variables_initializer()

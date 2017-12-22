@@ -104,7 +104,7 @@ context = bpy.context
 settings = make_settings()
 
 
-for i in range(1,4):
+for i in range(3):
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete()
     rockgen.generateRocks(*settings["Default"])
@@ -122,4 +122,4 @@ for i in range(1,4):
     #bpy.data.objects["rock"].modifiers["Decimate"].ratio = 0.1
     #bpy.ops.object.modifier_apply(apply_as="DATA")
     
-    bpy.ops.export_mesh.stl(filepath="xmls/nasa/rock{}.stl".format(i), check_existing=False)
+    bpy.ops.export_mesh.stl(filepath="xmls/nasa/meshes/rock{}.stl".format(i), check_existing=False)
