@@ -1,46 +1,55 @@
 <distract>
-		<texture  name="distract0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract0_mat" shininess="0.03" specular="0.75" texture="distract0_tex"></material>
-		<texture  name="distract1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract1_mat" shininess="0.03" specular="0.75" texture="distract1_tex"></material>
-		<texture  name="distract2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract2_mat" shininess="0.03" specular="0.75" texture="distract2_tex"></material>
-		<texture  name="distract3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract3_mat" shininess="0.03" specular="0.75" texture="distract3_tex"></material>
-		<texture  name="distract4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract4_mat" shininess="0.03" specular="0.75" texture="distract4_tex"></material>
-		<texture  name="distract5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract5_mat" shininess="0.03" specular="0.75" texture="distract5_tex"></material>
-		<texture  name="distract6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract6_mat" shininess="0.03" specular="0.75" texture="distract6_tex"></material>
-		<texture  name="distract7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract7_mat" shininess="0.03" specular="0.75" texture="distract7_tex"></material>
-		<texture  name="distract8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract8_mat" shininess="0.03" specular="0.75" texture="distract8_tex"></material>
-		<texture  name="distract9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract9_mat" shininess="0.03" specular="0.75" texture="distract9_tex"></material>
-		<texture  name="distract10_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract10_mat" shininess="0.03" specular="0.75" texture="distract10_tex"></material>
-		<texture  name="distract11_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract11_mat" shininess="0.03" specular="0.75" texture="distract11_tex"></material>
-		<texture  name="distract12_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract12_mat" shininess="0.03" specular="0.75" texture="distract12_tex"></material>
-		<texture  name="distract13_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract13_mat" shininess="0.03" specular="0.75" texture="distract13_tex"></material>
-		<texture  name="distract14_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract14_mat" shininess="0.03" specular="0.75" texture="distract14_tex"></material>
-		<texture  name="distract15_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract15_mat" shininess="0.03" specular="0.75" texture="distract15_tex"></material>
-		<texture  name="distract16_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract16_mat" shininess="0.03" specular="0.75" texture="distract16_tex"></material>
-		<texture  name="distract17_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract17_mat" shininess="0.03" specular="0.75" texture="distract17_tex"></material>
-		<texture  name="distract18_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract18_mat" shininess="0.03" specular="0.75" texture="distract18_tex"></material>
-		<texture  name="distract19_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="distract19_mat" shininess="0.03" specular="0.75" texture="distract19_tex"></material>
+		# Parts of the robot
+		<texture  name="robot_part0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part0_mat" shininess="0.03" specular="0.75" texture="robot_part0_tex"></material>
+		<texture  name="robot_part1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part1_mat" shininess="0.03" specular="0.75" texture="robot_part1_tex"></material>
+		<texture  name="robot_part2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part2_mat" shininess="0.03" specular="0.75" texture="robot_part2_tex"></material>
 
-		JUDGES
+		# Distractor side objects
+		<texture  name="side_obj0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj0_mat" shininess="0.03" specular="0.75" texture="side_obj0_tex"></material>
+		<texture  name="side_obj1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj1_mat" shininess="0.03" specular="0.75" texture="side_obj1_tex"></material>
+		<texture  name="side_obj2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj2_mat" shininess="0.03" specular="0.75" texture="side_obj2_tex"></material>
+		<texture  name="side_obj3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj3_mat" shininess="0.03" specular="0.75" texture="side_obj3_tex"></material>
+		<texture  name="side_obj4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj4_mat" shininess="0.03" specular="0.75" texture="side_obj4_tex"></material>
+		<texture  name="side_obj5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj5_mat" shininess="0.03" specular="0.75" texture="side_obj5_tex"></material>
+		<texture  name="side_obj6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj6_mat" shininess="0.03" specular="0.75" texture="side_obj6_tex"></material>
+		<texture  name="side_obj7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj7_mat" shininess="0.03" specular="0.75" texture="side_obj7_tex"></material>
+		<texture  name="side_obj8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj8_mat" shininess="0.03" specular="0.75" texture="side_obj8_tex"></material>
+		<texture  name="side_obj9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj9_mat" shininess="0.03" specular="0.75" texture="side_obj9_tex"></material>
+		<texture  name="side_obj10_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj10_mat" shininess="0.03" specular="0.75" texture="side_obj10_tex"></material>
+		<texture  name="side_obj11_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj11_mat" shininess="0.03" specular="0.75" texture="side_obj11_tex"></material>
+		<texture  name="side_obj12_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj12_mat" shininess="0.03" specular="0.75" texture="side_obj12_tex"></material>
+		<texture  name="side_obj13_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj13_mat" shininess="0.03" specular="0.75" texture="side_obj13_tex"></material>
+		<texture  name="side_obj14_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj14_mat" shininess="0.03" specular="0.75" texture="side_obj14_tex"></material>
+		<texture  name="side_obj15_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj15_mat" shininess="0.03" specular="0.75" texture="side_obj15_tex"></material>
+		<texture  name="side_obj16_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj16_mat" shininess="0.03" specular="0.75" texture="side_obj16_tex"></material>
+		<texture  name="side_obj17_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj17_mat" shininess="0.03" specular="0.75" texture="side_obj17_tex"></material>
+		<texture  name="side_obj18_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj18_mat" shininess="0.03" specular="0.75" texture="side_obj18_tex"></material>
+		<texture  name="side_obj19_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="side_obj19_mat" shininess="0.03" specular="0.75" texture="side_obj19_tex"></material>
+
+		# Judges
 		<texture  name="judge0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="judge0_mat" shininess="0.03" specular="0.75" texture="judge0_tex"></material>
 		<texture  name="judge1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -51,5 +60,45 @@
 		<material name="judge3_mat" shininess="0.03" specular="0.75" texture="judge3_tex"></material>
 		<texture  name="judge4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="judge4_mat" shininess="0.03" specular="0.75" texture="judge4_tex"></material>
+
+		# Arena structure
+		<texture  name="arena_structure0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure0_mat" shininess="0.03" specular="0.75" texture="arena_structure0_tex"></material>
+		<texture  name="arena_structure1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure1_mat" shininess="0.03" specular="0.75" texture="arena_structure1_tex"></material>
+		<texture  name="arena_structure2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure2_mat" shininess="0.03" specular="0.75" texture="arena_structure2_tex"></material>
+		<texture  name="arena_structure3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure3_mat" shininess="0.03" specular="0.75" texture="arena_structure3_tex"></material>
+		<texture  name="arena_structure4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure4_mat" shininess="0.03" specular="0.75" texture="arena_structure4_tex"></material>
+		<texture  name="arena_structure5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure5_mat" shininess="0.03" specular="0.75" texture="arena_structure5_tex"></material>
+		<texture  name="arena_structure6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure6_mat" shininess="0.03" specular="0.75" texture="arena_structure6_tex"></material>
+		<texture  name="arena_structure7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure7_mat" shininess="0.03" specular="0.75" texture="arena_structure7_tex"></material>
+		<texture  name="arena_structure8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure8_mat" shininess="0.03" specular="0.75" texture="arena_structure8_tex"></material>
+		<texture  name="arena_structure9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure9_mat" shininess="0.03" specular="0.75" texture="arena_structure9_tex"></material>
+		<texture  name="arena_structure10_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure10_mat" shininess="0.03" specular="0.75" texture="arena_structure10_tex"></material>
+		<texture  name="arena_structure11_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure11_mat" shininess="0.03" specular="0.75" texture="arena_structure11_tex"></material>
+		<texture  name="arena_structure12_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure12_mat" shininess="0.03" specular="0.75" texture="arena_structure12_tex"></material>
+		<texture  name="arena_structure13_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure13_mat" shininess="0.03" specular="0.75" texture="arena_structure13_tex"></material>
+		<texture  name="arena_structure14_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure14_mat" shininess="0.03" specular="0.75" texture="arena_structure14_tex"></material>
+		<texture  name="arena_structure15_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="arena_structure15_mat" shininess="0.03" specular="0.75" texture="arena_structure15_tex"></material>
+
+		# Billboard to display image
+		<texture  name="billboard_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="billboard_mat" shininess="0.03" specular="0.75" texture="billboard_tex"></material>
+
+
 
 </distract>

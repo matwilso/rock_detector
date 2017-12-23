@@ -1,66 +1,80 @@
 <distract>
-	<body name="distract0" pos="0.0 0.0 0.0">
-		<geom name="distract0" type="box" size="0.1 0.1 0.1" material="distract0_mat"/>
+
+	# Parts of the robot
+	<body name="robot_part0" pos="0.0 0.0 0.0">
+		<geom name="robot_part0" type="box" size="0.1 0.1 0.1" material="robot_part0_mat"/>
 	</body>
-	<body name="distract1" pos="0.0 0.0 0.0">
-		<geom name="distract1" type="box" size="0.1 0.1 0.1" material="distract1_mat"/>
+	<body name="robot_part1" pos="0.0 0.0 0.0">
+		<geom name="robot_part1" type="box" size="0.1 0.1 0.1" material="robot_part1_mat"/>
 	</body>
-	<body name="distract2" pos="0.0 0.0 0.0">
-		<geom name="distract2" type="box" size="0.1 0.1 0.1" material="distract2_mat"/>
-	</body>
-	<body name="distract3" pos="0.0 0.0 0.0">
-		<geom name="distract3" type="box" size="0.1 0.1 0.1" material="distract3_mat"/>
-	</body>
-	<body name="distract4" pos="0.0 0.0 0.0">
-		<geom name="distract4" type="box" size="0.1 0.1 0.1" material="distract4_mat"/>
-	</body>
-	<body name="distract5" pos="0.0 0.0 0.0">
-		<geom name="distract5" type="box" size="0.1 0.1 0.1" material="distract5_mat"/>
-	</body>
-	<body name="distract6" pos="0.0 0.0 0.0">
-		<geom name="distract6" type="box" size="0.1 0.1 0.1" material="distract6_mat"/>
-	</body>
-	<body name="distract7" pos="0.0 0.0 0.0">
-		<geom name="distract7" type="box" size="0.1 0.1 0.1" material="distract7_mat"/>
-	</body>
-	<body name="distract8" pos="0.0 0.0 0.0">
-		<geom name="distract8" type="box" size="0.1 0.1 0.1" material="distract8_mat"/>
-	</body>
-	<body name="distract9" pos="0.0 0.0 0.0">
-		<geom name="distract9" type="box" size="0.1 0.1 0.1" material="distract9_mat"/>
-	</body>
-	<body name="distract10" pos="0.0 0.0 0.0">
-		<geom name="distract10" type="box" size="0.1 0.1 0.1" material="distract10_mat"/>
-	</body>
-	<body name="distract11" pos="0.0 0.0 0.0">
-		<geom name="distract11" type="box" size="0.1 0.1 0.1" material="distract11_mat"/>
-	</body>
-	<body name="distract12" pos="0.0 0.0 0.0">
-		<geom name="distract12" type="box" size="0.1 0.1 0.1" material="distract12_mat"/>
-	</body>
-	<body name="distract13" pos="0.0 0.0 0.0">
-		<geom name="distract13" type="box" size="0.1 0.1 0.1" material="distract13_mat"/>
-	</body>
-	<body name="distract14" pos="0.0 0.0 0.0">
-		<geom name="distract14" type="box" size="0.1 0.1 0.1" material="distract14_mat"/>
-	</body>
-	<body name="distract15" pos="0.0 0.0 0.0">
-		<geom name="distract15" type="box" size="0.1 0.1 0.1" material="distract15_mat"/>
-	</body>
-	<body name="distract16" pos="0.0 0.0 0.0">
-		<geom name="distract16" type="box" size="0.1 0.1 0.1" material="distract16_mat"/>
-	</body>
-	<body name="distract17" pos="0.0 0.0 0.0">
-		<geom name="distract17" type="box" size="0.1 0.1 0.1" material="distract17_mat"/>
-	</body>
-	<body name="distract18" pos="0.0 0.0 0.0">
-		<geom name="distract18" type="box" size="0.1 0.1 0.1" material="distract18_mat"/>
-	</body>
-	<body name="distract19" pos="0.0 0.0 0.0">
-		<geom name="distract19" type="box" size="0.1 0.1 0.1" material="distract19_mat"/>
+	<body name="robot_part2" pos="0.0 0.0 0.0">
+		<geom name="robot_part2" type="box" size="0.1 0.1 0.1" material="robot_part2_mat"/>
 	</body>
 
-	JUDGES 
+
+	# Distractor side objects
+	<body name="side_obj0" pos="0.0 0.0 0.0">
+		<geom name="side_obj0" type="box" size="0.1 0.1 0.1" material="side_obj0_mat"/>
+	</body>
+	<body name="side_obj1" pos="0.0 0.0 0.0">
+		<geom name="side_obj1" type="box" size="0.1 0.1 0.1" material="side_obj1_mat"/>
+	</body>
+	<body name="side_obj2" pos="0.0 0.0 0.0">
+		<geom name="side_obj2" type="box" size="0.1 0.1 0.1" material="side_obj2_mat"/>
+	</body>
+	<body name="side_obj3" pos="0.0 0.0 0.0">
+		<geom name="side_obj3" type="box" size="0.1 0.1 0.1" material="side_obj3_mat"/>
+	</body>
+	<body name="side_obj4" pos="0.0 0.0 0.0">
+		<geom name="side_obj4" type="box" size="0.1 0.1 0.1" material="side_obj4_mat"/>
+	</body>
+	<body name="side_obj5" pos="0.0 0.0 0.0">
+		<geom name="side_obj5" type="box" size="0.1 0.1 0.1" material="side_obj5_mat"/>
+	</body>
+	<body name="side_obj6" pos="0.0 0.0 0.0">
+		<geom name="side_obj6" type="box" size="0.1 0.1 0.1" material="side_obj6_mat"/>
+	</body>
+	<body name="side_obj7" pos="0.0 0.0 0.0">
+		<geom name="side_obj7" type="box" size="0.1 0.1 0.1" material="side_obj7_mat"/>
+	</body>
+	<body name="side_obj8" pos="0.0 0.0 0.0">
+		<geom name="side_obj8" type="box" size="0.1 0.1 0.1" material="side_obj8_mat"/>
+	</body>
+	<body name="side_obj9" pos="0.0 0.0 0.0">
+		<geom name="side_obj9" type="box" size="0.1 0.1 0.1" material="side_obj9_mat"/>
+	</body>
+	<body name="side_obj10" pos="0.0 0.0 0.0">
+		<geom name="side_obj10" type="box" size="0.1 0.1 0.1" material="side_obj10_mat"/>
+	</body>
+	<body name="side_obj11" pos="0.0 0.0 0.0">
+		<geom name="side_obj11" type="box" size="0.1 0.1 0.1" material="side_obj11_mat"/>
+	</body>
+	<body name="side_obj12" pos="0.0 0.0 0.0">
+		<geom name="side_obj12" type="box" size="0.1 0.1 0.1" material="side_obj12_mat"/>
+	</body>
+	<body name="side_obj13" pos="0.0 0.0 0.0">
+		<geom name="side_obj13" type="box" size="0.1 0.1 0.1" material="side_obj13_mat"/>
+	</body>
+	<body name="side_obj14" pos="0.0 0.0 0.0">
+		<geom name="side_obj14" type="box" size="0.1 0.1 0.1" material="side_obj14_mat"/>
+	</body>
+	<body name="side_obj15" pos="0.0 0.0 0.0">
+		<geom name="side_obj15" type="box" size="0.1 0.1 0.1" material="side_obj15_mat"/>
+	</body>
+	<body name="side_obj16" pos="0.0 0.0 0.0">
+		<geom name="side_obj16" type="box" size="0.1 0.1 0.1" material="side_obj16_mat"/>
+	</body>
+	<body name="side_obj17" pos="0.0 0.0 0.0">
+		<geom name="side_obj17" type="box" size="0.1 0.1 0.1" material="side_obj17_mat"/>
+	</body>
+	<body name="side_obj18" pos="0.0 0.0 0.0">
+		<geom name="side_obj18" type="box" size="0.1 0.1 0.1" material="side_obj18_mat"/>
+	</body>
+	<body name="side_obj19" pos="0.0 0.0 0.0">
+		<geom name="side_obj19" type="box" size="0.1 0.1 0.1" material="side_obj19_mat"/>
+	</body>
+
+	# Judges 
 	<body name="judge0" pos="0.0 0.0 0.0">
 		<geom name="judge0" type="box" size="0.1 0.1 0.1" material="judge0_mat"/>
 	</body>
@@ -76,5 +90,60 @@
 	<body name="judge4" pos="0.0 0.0 0.0">
 		<geom name="judge4" type="box" size="0.1 0.1 0.1" material="judge4_mat"/>
 	</body>
+
+	# Arena structure
+	<body name="arena_structure0" pos="0.0 0.0 0.0">
+		<geom name="arena_structure0" type="box" size="0.1 0.1 0.1" material="arena_structure0_mat"/>
+	</body>
+	<body name="arena_structure1" pos="0.0 0.0 0.0">
+		<geom name="arena_structure1" type="box" size="0.1 0.1 0.1" material="arena_structure1_mat"/>
+	</body>
+	<body name="arena_structure2" pos="0.0 0.0 0.0">
+		<geom name="arena_structure2" type="box" size="0.1 0.1 0.1" material="arena_structure2_mat"/>
+	</body>
+	<body name="arena_structure3" pos="0.0 0.0 0.0">
+		<geom name="arena_structure3" type="box" size="0.1 0.1 0.1" material="arena_structure3_mat"/>
+	</body>
+	<body name="arena_structure4" pos="0.0 0.0 0.0">
+		<geom name="arena_structure4" type="box" size="0.1 0.1 0.1" material="arena_structure4_mat"/>
+	</body>
+	<body name="arena_structure5" pos="0.0 0.0 0.0">
+		<geom name="arena_structure5" type="box" size="0.1 0.1 0.1" material="arena_structure5_mat"/>
+	</body>
+	<body name="arena_structure6" pos="0.0 0.0 0.0">
+		<geom name="arena_structure6" type="box" size="0.1 0.1 0.1" material="arena_structure6_mat"/>
+	</body>
+	<body name="arena_structure7" pos="0.0 0.0 0.0">
+		<geom name="arena_structure7" type="box" size="0.1 0.1 0.1" material="arena_structure7_mat"/>
+	</body>
+	<body name="arena_structure8" pos="0.0 0.0 0.0">
+		<geom name="arena_structure8" type="box" size="0.1 0.1 0.1" material="arena_structure8_mat"/>
+	</body>
+	<body name="arena_structure9" pos="0.0 0.0 0.0">
+		<geom name="arena_structure9" type="box" size="0.1 0.1 0.1" material="arena_structure9_mat"/>
+	</body>
+	<body name="arena_structure10" pos="0.0 0.0 0.0">
+		<geom name="arena_structure10" type="box" size="0.1 0.1 0.1" material="arena_structure10_mat"/>
+	</body>
+	<body name="arena_structure11" pos="0.0 0.0 0.0">
+		<geom name="arena_structure11" type="box" size="0.1 0.1 0.1" material="arena_structure11_mat"/>
+	</body>
+	<body name="arena_structure12" pos="0.0 0.0 0.0">
+		<geom name="arena_structure12" type="box" size="0.1 0.1 0.1" material="arena_structure12_mat"/>
+	</body>
+	<body name="arena_structure13" pos="0.0 0.0 0.0">
+		<geom name="arena_structure13" type="box" size="0.1 0.1 0.1" material="arena_structure13_mat"/>
+	</body>
+	<body name="arena_structure14" pos="0.0 0.0 0.0">
+		<geom name="arena_structure14" type="box" size="0.1 0.1 0.1" material="arena_structure14_mat"/>
+	</body>
+	<body name="arena_structure15" pos="0.0 0.0 0.0">
+		<geom name="arena_structure15" type="box" size="0.1 0.1 0.1" material="arena_structure15_mat"/>
+	</body>
+
+	<body name="billboard" pos="0.0 0.0 0.0">
+		<geom name="billboard" type="box" size="0.01 10.0 10.0" material="billboard_mat"/>
+	</body>
+
 
 </distract>

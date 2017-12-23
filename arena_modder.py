@@ -37,6 +37,26 @@ OBS_SY = SZ_ENDY
 OBS_ENDY = OBS_SY + OBS_LEN
 
 class ArenaModder(object):
+    """
+    Object to handle randomization of all relevant properties of Mujoco sim
+
+    step()
+    get_cam_frame()
+    mod_textures()
+    mod_lights()
+    mod_camera()
+    mod_extra_distractors()
+    mod_extra_judges()
+    mod_extra_robot_parts()
+    mod_extra_arena_structure()
+    mod_extra_arena_background()
+    mod_extras()
+    mod_walls()
+    mod_dirt()
+    mod_rocks()
+    randrocks()
+
+    """
     def __init__(self, filepath, blender_path=None, visualize=False):
         self._init(filepath, blender_path, visualize)
 
@@ -79,7 +99,7 @@ class ArenaModder(object):
             ypr = quaternion.as_euler_angles(quat) * 180 / np.pi
             cam_pos = self.model.cam_pos[0]
             #self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, ypr))
-#            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
+            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
             self.viewer.render()
             #import ipdb; ipdb.set_trace()
 
@@ -154,12 +174,36 @@ class ArenaModder(object):
         fovy = sample(CAM_RFOVY)
         self.cam_modder.set_fovy('camera1', fovy)
 
+    def _set_visible(self, prefix, range_top, visible):
+        """Helper function to set visibility of several objects"""
+        if not visible:
+            if range_top == 0:
+                name = prefix
+                gid = self.model.geom_name2id(name)
+                self.model.geom_rgba[gid][-1] = 0.0
+
+            for i in range(range_top):
+                name = "{}{}".format(prefix, i)
+                gid = self.model.geom_name2id(name)
+                self.model.geom_rgba[gid][-1] = 0.0
+        else:
+            if range_top == 0:
+                name = prefix
+                gid = self.model.geom_name2id(name)
+                self.model.geom_rgba[gid][-1] = 1.0
+
+            for i in range(range_top):
+                name = "{}{}".format(prefix, i)
+                gid = self.model.geom_name2id(name)
+                self.model.geom_rgba[gid][-1] = 1.0
     
-    def mod_extra_distractors(self):
+    def mod_extra_distractors(self, visible=True):
         """mod rocks and tools on the side of the arena"""
         # TODO: I might consider changing these to look like rocks instead of 
         # just random shapes.  It just looks weird to me right now.  Ok for now,
         # but it seems a bit off.
+        self._set_visible("side_obj", 20, visible)
+
         Z_JITTER = 0.05
         OBJ_XRANGE = Range(0.01, 0.1)
         OBJ_YRANGE = Range(0.01, 0.1)
@@ -191,7 +235,7 @@ class ArenaModder(object):
         right_range = Range3D(right_xrange, right_yrange, right_zrange)
 
         for i in range(20):
-            name = "distract{}".format(i)
+            name = "side_obj{}".format(i)
             obj_bid = self.model.body_name2id(name)
             obj_gid = self.model.geom_name2id(name)
             self.model.geom_quat[obj_gid] = random_quat() 
@@ -215,11 +259,11 @@ class ArenaModder(object):
             else:
                 self.model.body_pos[obj_bid] = sample_xyz(right_range)
 
-    def mod_extra_judges(self):
+    def mod_extra_judges(self, visible=True):
         """mod NASA judges around the perimeter of the arena"""
-
         # TODO: might want to add regions on the sides of the arena, but these
         # may be covered by the distractors already
+        self._set_visible("judge", 5, visible)
 
         JUDGE_XRANGE = Range(0.1, 0.2)
         JUDGE_YRANGE = Range(0.1, 0.2)
@@ -258,11 +302,24 @@ class ArenaModder(object):
             else:
                 self.model.geom_rgba[judge_gid][-1] = 1.0
 
-    def mod_extra_arena_structure():
-        # TODO: add some billboards in the back that are more realistic scenes to not
-        # get distrcated by 
+    def mod_extra_robot_parts(self, visible=True):
+        """add distractor parts of robots in the lower area of the camera frame"""
+        self._set_visible("robot_part", 3, visible=False)
+        pass
 
-    def mod_extras(self):
+    def mod_extra_arena_structure(self, visible=True):
+        """add randomized structure of the arena in the background with 
+        pillars and a crossbar"""
+        self._set_visible("arena_structure", 15, visible=False)
+        pass
+
+    def mod_extra_arena_background(self, visible=True):
+        """add some billboards in the back that are more realistic scenes to not
+        get distracted by"""
+        self._set_visible("billboard", 0, visible=False)
+        pass
+
+    def mod_extras(self, visible=True):
         """
         Randomize extra properties of the world such as the extra rocks on the side
         of the arena wal
@@ -274,11 +331,15 @@ class ArenaModder(object):
         Artifacts:
         - Rocks and tools on edges of bin
         - NASA judges around the perimeter
+        - Parts of the robot in the frame
         - Background arena structure and crowd 
         - Bright light around edges of arena
         """
-        self.mod_extra_distractors()
-        self.mod_extra_judges()
+        self.mod_extra_distractors(visible)
+        self.mod_extra_judges(visible)
+        self.mod_extra_robot_parts(visible)
+        self.mod_extra_arena_structure(visible)
+        self.mod_extra_arena_background(visible)
         # maybe TODO: mod the extra external lights around the arena
     
     def mod_walls(self):
@@ -289,10 +350,9 @@ class ArenaModder(object):
         walls, or where the walls and geometry is slightly different than the sim 
         model
         """
-        for name in self.model.geom_names:
-            if name[-4:] != "wall":
-                continue 
-    
+
+        wall_names = ["left_wall", "right_wall", "bin_wall", "dig_wall"]
+        for name in wall_names:
             geom_id = self.model.geom_name2id(name)
             body_id = self.model.body_name2id(name)
     
@@ -387,8 +447,8 @@ class ArenaModder(object):
                 pos = np.sum(close_xyz * weights, axis=0)
 
                 # show an "o" and a marker where the height is
-#                if self.visualize:
-#                    self.viewer.add_marker(pos=pos, label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+                if self.visualize:
+                    self.viewer.add_marker(pos=pos, label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
                 
                 # approximate z height of ground
                 return pos[2]
@@ -478,8 +538,8 @@ class ArenaModder(object):
             gxy = global_xyz[0:2]
             max_height = global_xyz[2] 
 
-#            if self.visualize:
-#                self.viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
+            if self.visualize:
+                self.viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
     
             dirt_z = dirt_height_xy(gxy)
             #dirt_z = 0
@@ -537,8 +597,8 @@ class ArenaModder(object):
             ground_truth[3*i+2] = in_cam_frame[2]
             text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
             #text = "height:{0:.2f}".format(z_height)
-#            if self.visualize:
-#                self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+            if self.visualize:
+                self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
 
         #print(ground_truth)
         return ground_truth
