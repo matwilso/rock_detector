@@ -39,4 +39,17 @@
 		<material name="distract18_mat" shininess="0.03" specular="0.75" texture="distract18_tex"></material>
 		<texture  name="distract19_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="distract19_mat" shininess="0.03" specular="0.75" texture="distract19_tex"></material>
+
+		JUDGES
+		<texture  name="judge0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="judge0_mat" shininess="0.03" specular="0.75" texture="judge0_tex"></material>
+		<texture  name="judge1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="judge1_mat" shininess="0.03" specular="0.75" texture="judge1_tex"></material>
+		<texture  name="judge2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="judge2_mat" shininess="0.03" specular="0.75" texture="judge2_tex"></material>
+		<texture  name="judge3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="judge3_mat" shininess="0.03" specular="0.75" texture="judge3_tex"></material>
+		<texture  name="judge4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="judge4_mat" shininess="0.03" specular="0.75" texture="judge4_tex"></material>
+
 </distract>

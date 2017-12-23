@@ -59,4 +59,22 @@
 	<body name="distract19" pos="0.0 0.0 0.0">
 		<geom name="distract19" type="box" size="0.1 0.1 0.1" material="distract19_mat"/>
 	</body>
+
+	JUDGES 
+	<body name="judge0" pos="0.0 0.0 0.0">
+		<geom name="judge0" type="box" size="0.1 0.1 0.1" material="judge0_mat"/>
+	</body>
+	<body name="judge1" pos="0.0 0.0 0.0">
+		<geom name="judge1" type="box" size="0.1 0.1 0.1" material="judge1_mat"/>
+	</body>
+	<body name="judge2" pos="0.0 0.0 0.0">
+		<geom name="judge2" type="box" size="0.1 0.1 0.1" material="judge2_mat"/>
+	</body>
+	<body name="judge3" pos="0.0 0.0 0.0">
+		<geom name="judge3" type="box" size="0.1 0.1 0.1" material="judge3_mat"/>
+	</body>
+	<body name="judge4" pos="0.0 0.0 0.0">
+		<geom name="judge4" type="box" size="0.1 0.1 0.1" material="judge4_mat"/>
+	</body>
+
 </distract>

@@ -79,7 +79,7 @@ class ArenaModder(object):
             ypr = quaternion.as_euler_angles(quat) * 180 / np.pi
             cam_pos = self.model.cam_pos[0]
             #self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, ypr))
-            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
+#            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
             self.viewer.render()
             #import ipdb; ipdb.set_trace()
 
@@ -161,9 +161,9 @@ class ArenaModder(object):
         # just random shapes.  It just looks weird to me right now.  Ok for now,
         # but it seems a bit off.
         Z_JITTER = 0.05
-        OBJ_XRANGE = Range(0.01, 0.09)
-        OBJ_YRANGE = Range(0.01, 0.09)
-        OBJ_ZRANGE = Range(0.01, 0.09)
+        OBJ_XRANGE = Range(0.01, 0.1)
+        OBJ_YRANGE = Range(0.01, 0.1)
+        OBJ_ZRANGE = Range(0.01, 0.1)
         OBJ_SIZE_RANGE = Range3D(OBJ_XRANGE, OBJ_YRANGE, OBJ_ZRANGE)
 
         floor_gid = self.model.geom_name2id("floor")
@@ -194,7 +194,7 @@ class ArenaModder(object):
             name = "distract{}".format(i)
             obj_bid = self.model.body_name2id(name)
             obj_gid = self.model.geom_name2id(name)
-            self.model.geom_quat[obj_gid] = random_quat()
+            self.model.geom_quat[obj_gid] = random_quat() 
             self.model.geom_size[obj_gid] = sample_xyz(OBJ_SIZE_RANGE)
             self.model.geom_type[obj_gid] = sample_geom_type()
 
@@ -215,6 +215,52 @@ class ArenaModder(object):
             else:
                 self.model.body_pos[obj_bid] = sample_xyz(right_range)
 
+    def mod_extra_judges(self):
+        """mod NASA judges around the perimeter of the arena"""
+
+        # TODO: might want to add regions on the sides of the arena, but these
+        # may be covered by the distractors already
+
+        JUDGE_XRANGE = Range(0.1, 0.2)
+        JUDGE_YRANGE = Range(0.1, 0.2)
+        JUDGE_ZRANGE = Range(0.75, 1.0)
+        JUDGE_SIZE_RANGE = Range3D(JUDGE_XRANGE, JUDGE_YRANGE, JUDGE_ZRANGE)
+
+        floor_gid = self.model.geom_name2id("floor")
+        digwall_bid = self.model.body_name2id("dig_wall")
+        digwall_gid = self.model.geom_name2id("dig_wall")
+
+
+        digwall_center = self.model.body_pos[digwall_bid]
+        digwall_geo = self.model.geom_size[digwall_gid]
+        digwall_xrange = Range(-1.0 + digwall_center[0]-digwall_geo[0], 1.0 + digwall_center[0]+digwall_geo[0])
+        digwall_yrange = Range(digwall_center[1]+0.5, digwall_center[1]+1.5)
+        digwall_zrange = JUDGE_ZRANGE - 0.75
+        digwall_range = Range3D(digwall_xrange, digwall_yrange, digwall_zrange)
+
+        for i in range(5):
+            name = "judge{}".format(i)
+            judge_bid = self.model.body_name2id(name)
+            judge_gid = self.model.geom_name2id(name)
+
+            #self.model.geom_quat[judge_gid] = jitter_quat(self.start_geom_quat[judge_gid], 0.05)
+            self.model.geom_quat[judge_gid] = random_quat()
+            self.model.geom_size[judge_gid] = sample_xyz(JUDGE_SIZE_RANGE)
+            self.model.geom_type[judge_gid] = sample_geom_type()
+            if self.model.geom_type[judge_gid] == 3 or self.model.geom_type[judge_gid] == 5:
+                self.model.geom_size[judge_gid][1] = self.model.geom_size[judge_gid][2]
+
+            self.model.body_pos[judge_bid] = sample_xyz(digwall_range)
+
+            # 50% chance of invisible 
+            if sample([0,1]) > 0.5:
+                self.model.geom_rgba[judge_gid][-1] = 0.0
+            else:
+                self.model.geom_rgba[judge_gid][-1] = 1.0
+
+    def mod_extra_arena_structure():
+        # TODO: add some billboards in the back that are more realistic scenes to not
+        # get distrcated by 
 
     def mod_extras(self):
         """
@@ -223,7 +269,7 @@ class ArenaModder(object):
 
         
         The motivation for these mods are that it seems likely that these distractor 
-        objects could degrade the performance of the detector. 
+        judgeects could degrade the performance of the detector. 
 
         Artifacts:
         - Rocks and tools on edges of bin
@@ -232,9 +278,7 @@ class ArenaModder(object):
         - Bright light around edges of arena
         """
         self.mod_extra_distractors()
-        # TODO: mod NASA judges around the perimeter of the arena
-        # TODO: add some billboards in the back that are more realistic scenes to not
-        # get distrcated by 
+        self.mod_extra_judges()
         # maybe TODO: mod the extra external lights around the arena
     
     def mod_walls(self):
@@ -343,8 +387,8 @@ class ArenaModder(object):
                 pos = np.sum(close_xyz * weights, axis=0)
 
                 # show an "o" and a marker where the height is
-                if self.visualize:
-                    self.viewer.add_marker(pos=pos, label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
+#                if self.visualize:
+#                    self.viewer.add_marker(pos=pos, label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
                 
                 # approximate z height of ground
                 return pos[2]
@@ -434,8 +478,8 @@ class ArenaModder(object):
             gxy = global_xyz[0:2]
             max_height = global_xyz[2] 
 
-            if self.visualize:
-                self.viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
+#            if self.visualize:
+#                self.viewer.add_marker(pos=global_xyz, label="m", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 0.0, 1.0, 1.0]))
     
             dirt_z = dirt_height_xy(gxy)
             #dirt_z = 0
@@ -493,8 +537,8 @@ class ArenaModder(object):
             ground_truth[3*i+2] = in_cam_frame[2]
             text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
             #text = "height:{0:.2f}".format(z_height)
-            if self.visualize:
-                self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+#            if self.visualize:
+#                self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
 
         #print(ground_truth)
         return ground_truth
