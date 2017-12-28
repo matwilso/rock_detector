@@ -11,6 +11,23 @@ import matplotlib.pyplot as plt
 Holds various low level utils for the rock detector training
 
 """
+# OBJECT TYPE THINGS
+def Range(min, max):
+    """Return 1d numpy array of with min and max"""
+    if min <= max:
+        return np.array([min, max])
+    else:
+        print("WARNING: min {} was greater than max {}".format(min, max))
+        return np.array([max, min])
+
+def Range3D(x, y, z):
+    """Return numpy 1d array of with min and max"""
+    return np.array([x,y,z])
+
+def rto3d(r):
+    return Range3D(r, r, r)
+
+
 def str2bool(v):
     """For argparse"""
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -53,21 +70,6 @@ def display_image(cam_img, label):
     fig.text(0, 0, label)
     plt.show()
 
-# OBJECT TYPE THINGS
-def Range(min, max):
-    """Return 1d numpy array of with min and max"""
-    if min <= max:
-        return np.array([min, max])
-    else:
-        print("WARNING: min {} was greater than max {}".format(min, max))
-        return np.array([max, min])
-
-def Range3D(x, y, z):
-    """Return numpy 1d array of with min and max"""
-    return np.array([x,y,z])
-
-def rto3d(r):
-    return Range3D(r, r, r)
 
 
 # UTIL FUNCTIONS FOR RANDOMIZATION
@@ -79,9 +81,21 @@ def sample(num_range, as_int=False):
     else:
         return samp
 
-def sample_geom_type():
+def sample_geom_type(reject=[]):
     """Sample a mujoco geom type (range 3-6 capsule-box)"""
-    return random.randrange(3,7)
+
+    types = ["plane", "hfield", "sphere", "capsule", "ellipsoid", "cylinder", "box", "mesh"]
+    while True:
+        samp = random.randrange(3,7)
+        rejected = False
+        for r in reject:
+            if types.index(r) == samp:
+                rejected = True
+                break
+        if rejected:
+            continue
+        else:
+            return samp
 
 def sample_xyz(range3d):
     """Sample 3 floats in the 3 num_ranges"""

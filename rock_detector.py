@@ -16,12 +16,6 @@ from queue import Queue
 # TODO: create some verification images with ground truths that you know,
 # using Gazebo or Bullet or (preferably) in the real world
 
-# TODO: (arena_modder.mod_extras) add distractor objects to the training, like 
-# artifacts of the robot.
-# ...I think this project will actually be pretty tricky to get right. The 
-# manifold of training is just so small; it's going to be hard to cover 
-# everything that I need to.
-
 # TODO: add billboard in background with sampled images, including of
 # the actual competition area
 
@@ -125,6 +119,7 @@ def parse_command_line():
 
 
 def evaluate():
+    """Evaluate the accuracy of the model on real images to make sure it generalizes"""
     data = yaml.load(open('assets/real_data.yaml', 'r'))
     data_path = 'assets/data/'
 
@@ -192,6 +187,7 @@ def arena_sampler(arena_modder):
         yield cam_img, rock_ground_truth
 
 def generate_data():
+    """Loop to generate data in separate thread to feed the training loop"""
     try:
         # Arena modder setup
         arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
@@ -215,8 +211,8 @@ def generate_data():
 def summary_plots(grounds, preds):
     """
     Create plots showing both ground truths and predictions of rock
-    positions. Doing this natively with Tensorflow tools is currently 
-    impossible, so I hacked this together using matplotlib
+    positions. Doing this natively (with Tensorflow tools) is currently 
+    impossible, so I hacked together this matplotlib plotting
     """
     ground_summary_hist.append(grounds[0])
     pred_summary_hist.append(preds[0])

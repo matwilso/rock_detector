@@ -55,7 +55,6 @@ class ArenaModder(object):
     mod_dirt()
     mod_rocks()
     randrocks()
-
     """
     def __init__(self, filepath, blender_path=None, visualize=False):
         self._init(filepath, blender_path, visualize)
@@ -203,6 +202,8 @@ class ArenaModder(object):
         # just random shapes.  It just looks weird to me right now.  Ok for now,
         # but it seems a bit off.
         self._set_visible("side_obj", 20, visible)
+        if not visible:
+            return
 
         Z_JITTER = 0.05
         OBJ_XRANGE = Range(0.01, 0.1)
@@ -264,6 +265,8 @@ class ArenaModder(object):
         # TODO: might want to add regions on the sides of the arena, but these
         # may be covered by the distractors already
         self._set_visible("judge", 5, visible)
+        if not visible:
+            return
 
         JUDGE_XRANGE = Range(0.1, 0.2)
         JUDGE_YRANGE = Range(0.1, 0.2)
@@ -304,14 +307,98 @@ class ArenaModder(object):
 
     def mod_extra_robot_parts(self, visible=True):
         """add distractor parts of robots in the lower area of the camera frame"""
-        self._set_visible("robot_part", 3, visible=False)
-        pass
+        self._set_visible("robot_part", 3, visible=True)
+        if not visible:
+            return 
+        # Project difference into camera coordinate frame
+        cam_pos = self.model.cam_pos[0]
+        cam_quat = np.quaternion(*self.model.cam_quat[0])
+        lower_range  = Range3D([0.0, 0.0], [-0.2, -0.3], [-0.2, -0.3])
+        lower_size = Range3D([0.2, 0.6], [0.01, 0.1], [0.01, 0.1])
+        lower_angle = Range3D([-85.0, -95.0], [-180, 180], [-85, -95])
+
+        upper_range  = Range3D([-0.6, 0.6], [-0.05, 0.05], [-0.05, 0.05])
+        upper_size = Range3D([0.005, 0.05], [0.005, 0.05], [0.05, 0.3])
+        upper_angle = Range3D([-85.0, -95.0], [-180, 180], [-85, -95])
+
+        name = "robot_part0"
+        lower_bid = self.model.body_name2id(name)
+        lower_gid = self.model.geom_name2id(name)
+
+        lower_pos = cam_pos + quaternion.rotate_vectors(cam_quat, sample_xyz(lower_range))
+        self.model.body_pos[lower_bid] = lower_pos
+        self.model.geom_size[lower_gid] = sample_xyz(lower_size)
+        self.model.geom_quat[lower_gid] = sample_quat(lower_angle)
+        self.model.geom_type[lower_gid] = sample_geom_type(reject=["capsule"])
+
+        if self.model.geom_type[lower_gid] == 5:
+            self.model.geom_size[lower_gid][0] = self.model.geom_size[lower_gid][2]
+
+        for i in [1, 2]:
+            name = "robot_part{}".format(i)
+            upper_bid = self.model.body_name2id(name)
+            upper_gid = self.model.geom_name2id(name)
+            upper_pos = lower_pos + sample_xyz(upper_range)
+            self.model.body_pos[upper_bid] = upper_pos
+            self.model.geom_size[upper_gid] = sample_xyz(upper_size)
+            self.model.geom_type[upper_gid] = sample_geom_type()
+
+            # 50% of the time, choose random angle instead reasonable angle
+            if sample([0,1]) > 0.5:
+                self.model.geom_quat[upper_gid] = sample_quat(upper_angle)
+            else:
+                self.model.geom_quat[upper_gid] = random_quat()
+
 
     def mod_extra_arena_structure(self, visible=True):
         """add randomized structure of the arena in the background with 
         pillars and a crossbar"""
-        self._set_visible("arena_structure", 15, visible=False)
-        pass
+        self._set_visible("arena_structure", 16, visible=False)
+        if not visible:
+            return 
+
+        STARTY = DIGY + 3.0
+        ENDY = DIGY + 5.0
+        XBAR_SIZE = Range3D([10.0, 20.0], [0.05, 0.1], [0.2, 0.5])
+        XBAR_RANGE = Range3D([0.0, 0.0], [STARTY, ENDY], [3.0, 5.0])
+        STRUCTURE_SIZE = Range3D([0.05, 0.1], [0.05, 0.1], [3.0, 6.0])
+        STRUCTURE_RANGE = Range3D([np.nan, np.nan], [STARTY, ENDY], [0.0, 0.0])
+        x_range = np.linspace(ACX - 10.0, ACX + 10.0, 15)
+
+        # crossbar
+        name = "arena_structure15"
+        xbar_bid = self.model.body_name2id(name)
+        xbar_gid = self.model.geom_name2id(name)
+
+        self.model.geom_quat[xbar_gid] = jitter_quat(self.start_geom_quat[xbar_gid], 0.01)
+        self.model.geom_size[xbar_gid] = sample_xyz(XBAR_SIZE)
+        self.model.body_pos[xbar_bid] = sample_xyz(XBAR_RANGE)
+
+        # 10% chance of invisible 
+        if sample([0,1]) > 0.9:
+            self.model.geom_rgba[xbar_gid][-1] = 0.0
+        else:
+            self.model.geom_rgba[xbar_gid][-1] = 1.0
+
+        for i in range(15):
+            name = "arena_structure{}".format(i)
+            arena_structure_bid = self.model.body_name2id(name)
+            arena_structure_gid = self.model.geom_name2id(name)
+
+            STRUCTURE_RANGE[0] = Range(x_range[i]-0.1, x_range[i]+0.1)
+
+            self.model.geom_quat[arena_structure_gid] = jitter_quat(self.start_geom_quat[arena_structure_gid], 0.01)
+            self.model.geom_size[arena_structure_gid] = sample_xyz(STRUCTURE_SIZE)
+            self.model.body_pos[arena_structure_bid] = sample_xyz(STRUCTURE_RANGE)
+
+            self.model.geom_matid[arena_structure_gid] = self.model.geom_matid[xbar_gid]
+
+            # 10% chance of invisible 
+            if sample([0,1]) > 0.9:
+                self.model.geom_rgba[arena_structure_gid][-1] = 0.0
+            else:
+                self.model.geom_rgba[arena_structure_gid][-1] = 1.0
+
 
     def mod_extra_arena_background(self, visible=True):
         """add some billboards in the back that are more realistic scenes to not
@@ -336,8 +423,11 @@ class ArenaModder(object):
         - Bright light around edges of arena
         """
         self.mod_extra_distractors(visible)
-        self.mod_extra_judges(visible)
         self.mod_extra_robot_parts(visible)
+        # 10% of the time, hide the other distractor pieces
+        if sample([0,1]) > 0.9:
+            visible = False
+        self.mod_extra_judges(visible)
         self.mod_extra_arena_structure(visible)
         self.mod_extra_arena_background(visible)
         # maybe TODO: mod the extra external lights around the arena
@@ -454,8 +544,12 @@ class ArenaModder(object):
                 return pos[2]
             else:
                 return 0
-
-        return local_mean_height
+        def always_zero(xy):
+            return 0
+        
+        dirt_height_xy = local_mean_height
+        #dirt_height_xy = always_zero
+        return dirt_height_xy
     
     
     def mod_rocks(self):
