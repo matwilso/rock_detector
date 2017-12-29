@@ -101,7 +101,7 @@ unzip add_mesh_rocks.zip
 # Mujoco Tips
 
 - More documentation on lighting can be found here: http://www.glprogramming.com/red/chapter05.html#name10
-- You need to call sim.step() to get the camera and light modders to update
+- You need to call sim.forward() or sim.step() to get the camera and light modders to update
 - You can't scale a mesh after it has been loaded (http://www.mujoco.org/forum/index.php?threads/how-to-scale-already-exist-model.3483/)
 - Read this: https://github.com/openai/mujoco-py/issues/148 and this: https://github.com/openai/gym/issues/234
 - To make it so cameras don't look through walls, you need to add:

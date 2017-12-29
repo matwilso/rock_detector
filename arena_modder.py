@@ -5,8 +5,8 @@ import skimage
 import matplotlib.pyplot as plt
 
 import mujoco_py
-from mujoco_py import load_model_from_path, MjSim, MjViewer
-from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureModder
+from mujoco_py import load_model_from_path, MjSim, MjSimPool, MjViewer 
+from mujoco_py.modder import BaseModder, CameraModder, LightModder, MaterialModder, TextureModder
 
 from utils import preproc_image, display_image
 from utils import Range, Range3D, rto3d # object type things
@@ -35,13 +35,15 @@ DIG_LEN = 2.94
 SZ_ENDY = BINY + SZ_LEN 
 OBS_SY = SZ_ENDY
 OBS_ENDY = OBS_SY + OBS_LEN
+IMAGE_NOISE_RVARIANCE = Range(0.0, 0.0001)
 
-class ArenaModder(object):
+class ArenaModder(BaseModder):
     """
     Object to handle randomization of all relevant properties of Mujoco sim
 
-    step()
+    forward()
     get_cam_frame()
+    randomize()
     mod_textures()
     mod_lights()
     mod_camera()
@@ -56,17 +58,8 @@ class ArenaModder(object):
     mod_rocks()
     randrocks()
     """
-    def __init__(self, filepath, blender_path=None, visualize=False):
-        self._init(filepath, blender_path, visualize)
-
-    def _init(self, filepath, blender_path=None, visualize=False):
-        self.filepath = filepath
-        self.blender_path = blender_path 
-
-        self.model = load_model_from_path(filepath)
-        self.sim = MjSim(self.model)
-        self.visualize = visualize
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # Get start state of params to slightly jitter later
         self.start_geo_size = self.model.geom_size.copy()
         self.start_geom_quat = self.model.geom_quat.copy()
@@ -74,48 +67,24 @@ class ArenaModder(object):
         self.start_body_quat = self.model.body_quat.copy()
         self.start_matid = self.model.geom_matid.copy()
         self.floor_offset = self.model.body_pos[self.model.body_name2id('floor')]
+        self.rock_mod_cache = None
 
         self.tex_modder = TextureModder(self.sim)
         self.cam_modder = CameraModder(self.sim)
         self.light_modder = LightModder(self.sim)
+        self.visualize = False
+        self.viewer = None
 
-        #self.viewer = MjViewer(self.sim) if self.visualize else None
-        if not hasattr(self, 'viewer'):
-            self.viewer = MjViewer(self.sim) if self.visualize else None
-        else:
-            self.viewer.update_sim(self.sim) if self.visualize else None
+    def whiten_materials(self):
+        self.tex_modder.whiten_materials()
 
-
-    def step(self):
-        """
-        Advances simulator a step (NECESSARY TO MAKE CAMERA AND LIGHT MODDING WORK)
-        """
-        self.sim.step() 
-
-        if self.visualize:
-            # Get angle of camera and display it 
-            quat = np.quaternion(*self.model.cam_quat[0])
-            ypr = quaternion.as_euler_angles(quat) * 180 / np.pi
-            cam_pos = self.model.cam_pos[0]
-            #self.viewer.add_marker(pos=cam_pos, label="CAM: {}{}".format(cam_pos, ypr))
-            self.viewer.add_marker(pos=cam_pos, label="CAM: {}".format(ypr))
-            self.viewer.render()
-            #import ipdb; ipdb.set_trace()
-
-
-    def get_cam_frame(self, display=False, ground_truth=None):
-        """Grab an image from the camera (224, 244, 3) to feed into CNN"""
-        IMAGE_NOISE_RVARIANCE = Range(0.0, 0.0001)
-
-        cam_img = self.sim.render(1280, 720, camera_name='camera1')[::-1, :, :] # Rendered images are upside-down.
-        image_noise_variance = sample(IMAGE_NOISE_RVARIANCE) 
-        cam_img = (skimage.util.random_noise(cam_img, mode='gaussian', var=image_noise_variance) * 255).astype(np.uint8)
-        cam_img = preproc_image(cam_img)
-        if display:
-            label = str(ground_truth[3:6])
-            display_image(cam_img, label)
-
-        return cam_img
+    def randomize(self):
+        self.mod_textures()
+        self.mod_lights()
+        self.mod_camera()
+        self.mod_walls()
+        self.mod_extras()
+        self.mod_rocks()
 
     def mod_textures(self):
         """Randomize all the textures in the scene, including the skybox"""
@@ -516,31 +485,6 @@ class ArenaModder(object):
 
         # Return a function that the user can call to get the approximate 
         # height of an xy location
-    
-        ##def shitty_calculated_height(xy):
-        ##    # NOTE: this is not the best method.  It could be that the dirt is placed in a way # that the max height is not the effective max_height of a rock mesh, since it
-        ##    # could be buried.  What would be a better way to do this? 
-        ##    # I could do some subtraction of the rock mesh with the dirt mesh, but this 
-        ##    # becomes quite complicated because the indexing does not line up
-
-        ##    # Min squared distance
-        ##    z_index = np.argmin( np.sum(np.square(xy_indexes - xy), axis=1) - 0.5*z_heights )
-        ##    #print(np.max(mesh_abs_pos, axis=0))
-    
-        ##    height = z_heights[z_index]
-
-        ##    if height < 0 or height > 0.3:
-        ##        height = 0 
-
-        ##    if self.visualize:
-        ##        self.viewer.add_marker(pos=mesh_abs_pos[z_index, :], label="o", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([0.0, 1.0, 0.0, 1.0]))
-        ##        self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x", size=np.array([0.01, 0.01, 0.01]), rgba=np.array([1.0, 0.0, 0.0, 1.0]))
-        ##        self.viewer.add_marker(pos=np.concatenate([xy, np.array([height])]), label="x")
-        ##    return height
-
-        ##def mean_height(xy):
-        ##    return np.mean(z_heights[z_heights > 0]) # average all greater than 0 height vals
-
         def local_mean_height(xy):
             """
             Take an xy coordinate, and the approximate z height of the mesh at that
@@ -569,6 +513,7 @@ class ArenaModder(object):
                 return pos[2]
             else:
                 return 0
+
         def always_zero(xy):
             return 0
         
@@ -643,7 +588,7 @@ class ArenaModder(object):
         # Shuffle the positions of the rocks (l or m or r)
         shuffle_names = list(rock_body_ids.keys())
         random.shuffle(shuffle_names)
-        rock_mod_cache = [] 
+        self.rock_mod_cache = [] 
         for i in range(len(shuffle_names)):
             name = shuffle_names[i]
             rots = rot_cache[name]
@@ -665,13 +610,11 @@ class ArenaModder(object):
             #print(name, dirt_z)
     
             z_height = max_height - dirt_z
-            rock_mod_cache.append((name, z_height))
-    
-        return self._get_ground_truth(rock_mod_cache)
+            self.rock_mod_cache.append((name, z_height))
 
-    def _get_ground_truth(self, rock_mod_cache):
+    def get_ground_truth(self):
         """
-        Pass in rock_mod_cache returned from mod_rocks
+        self.rock_mod_cache set from self.mod_rocks
 
         Return 1d numpy array of 9 elements for positions of all 3 rocks including:
             - rock x dist from cam
@@ -691,7 +634,7 @@ class ArenaModder(object):
         ##r2_diff = r2_pos - cam_pos
     
         ground_truth = np.zeros(9, dtype=np.float32)
-        for i, slot in enumerate(rock_mod_cache):
+        for i, slot in enumerate(self.rock_mod_cache):
             name = slot[0]
             z_height = slot[1]
     
@@ -719,19 +662,4 @@ class ArenaModder(object):
             if self.visualize:
                 self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
 
-        #print(ground_truth)
         return ground_truth
-
-    
-    def randrocks(self):
-        """Generate a new set of 3 random rock meshes using a Blender script"""
-        if self.blender_path is None:
-            raise Exception('You must install Blender and include the path to its exectubale in the constructor to use this method')
-
-        import subprocess
-        subprocess.call([self.blender_path, "--background", "--python", "randrock.py"])
-        #self._init(self.filepath, self.blender_path, self.visualize)
-
-
-
-

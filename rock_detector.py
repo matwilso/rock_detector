@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+t!/usr/bin/env python3
 import os
 import os.path
 import pickle
@@ -7,7 +7,7 @@ import itertools
 import yaml
 import numpy as np
 import tensorflow as tf
-from arena_modder import ArenaModder
+from sim_manager import SimManager
 from utils import display_image, preproc_image, print_rocks, str2bool
 import matplotlib.pyplot as plt
 from threading import Thread, Event
@@ -16,11 +16,14 @@ from queue import Queue
 # TODO: create some verification images with ground truths that you know,
 # using Gazebo or Bullet or preferably in the real world
 
-# TODO: create a better scheme for randomizing the rocks.  like maybe have a 
-# set of 20 or so that get swapped in and out
-
 # TODO: start everything in a separate thread or process and I can have each thread 
 # running with a different version of the xml to load different heights
+# i think the way i am going to do this is via render pool with a render_callback
+# This is under the assumption that rendering takes much longer than updating sim
+# I think I should run some tests first
+
+# TODO: create a better scheme for randomizing the rocks.  like maybe have a 
+# set of 20 or so that get swapped in and out
 
 # TODO: add billboard in background with sampled images, including of
 # the actual competition area
@@ -50,6 +53,11 @@ from queue import Queue
 
 # TODO: make blender optional.  Generate fake rocks by overlapping a bunch of Mujoco
 # primitives together and blending it each round
+
+# NOTE: if we want to hot swap the randomize method, we can do it this way
+"""
+ArenaModder.randomize = ablated_randomize
+"""
 
 # NOTE: For a simpler task, they used 2^2 * 1k images. to get decent convergence (about ~4k, ~64k should be bomb). could be about 2 days for full convergence
 
@@ -169,16 +177,12 @@ def arena_sampler(arena_modder):
     """
     for i in itertools.count(1):
         # Randomize (mod) all relevant parameters
-        arena_modder.mod_textures()
-        arena_modder.mod_lights()
-        arena_modder.mod_camera()
-        arena_modder.mod_walls()
-        arena_modder.mod_extras()
-        rock_ground_truth = arena_modder.mod_rocks()
-        arena_modder.step()
+        arena_modder.randomize()
+        arena_modder.forward()
         
         # Grab cam frame and convert pixel value range from (0, 255) to (-0.5, 0.5)
         cam_img = arena_modder.get_cam_frame()
+        rock_ground_truth = arena_modder.get_ground_truth()
         ##camid = arena_modder.cam_modder.get_camid('camera1')
         ##cam_fovy = arena_modder.model.cam_fovy[camid]
         ##display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
@@ -194,9 +198,16 @@ def arena_sampler(arena_modder):
 
 def generate_data():
     """Loop to generate data in separate thread to feed the training loop"""
+
+
+    if self.simpool:
+        self.pool = MjRenderPool.create_from_sim(self.sim, self.simpool)
+
+
+
     try:
         # Arena modder setup
-        arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+        arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
 
         for i in itertools.count(1):
             sampler = arena_sampler(arena_modder)
@@ -285,7 +296,7 @@ def train_loop():
     """Training loop to feed model images and labels and update weights"""
     if not FLAGS.threaded:
         # Arena modder setup
-        arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+        arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
         sampler = arena_sampler(arena_modder)
 
     for i in itertools.count(1):
@@ -361,7 +372,7 @@ def main():
 def just_visualize():
     """Don't do any training, just loop through all the samples"""
     # Arena modder setup
-    arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+    arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
     sampler = arena_sampler(arena_modder)
     for i in itertools.count(1):
         next(sampler)
