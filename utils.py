@@ -81,6 +81,9 @@ def sample(num_range, as_int=False):
     else:
         return samp
 
+def sample_from_list(choices):
+    return choices[sample([0,len(choices)], as_int=True)]
+
 def sample_geom_type(reject=[]):
     """Sample a mujoco geom type (range 3-6 capsule-box)"""
 

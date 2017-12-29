@@ -10,7 +10,7 @@ from mujoco_py.modder import CameraModder, LightModder, MaterialModder, TextureM
 
 from utils import preproc_image, display_image
 from utils import Range, Range3D, rto3d # object type things
-from utils import sample, sample_xyz, sample_quat, sample_geom_type, random_quat, jitter_quat 
+from utils import sample, sample_from_list, sample_xyz, sample_quat, sample_geom_type, random_quat, jitter_quat 
 
 # TODO: set the arena center bin is 0,0
 
@@ -119,8 +119,17 @@ class ArenaModder(object):
 
     def mod_textures(self):
         """Randomize all the textures in the scene, including the skybox"""
-        self.tex_modder.randomize()
+        for name in self.sim.model.geom_names:
+            if name != "billboard":
+                self.tex_modder.rand_all(name)
+                ##texture_sizes = [32, 64, 128, 256, 512, 1024]
+                ##gid = self.model.geom_name2id(name)
+                ##mid = self.model.geom_matid[gid]
+                ##tid = self.model.mat_texid[mid]
+                ##self.model.tex_width[tid] = sample_from_list(texture_sizes)
+                ##self.model.tex_height[tid] = 6 * self.model.tex_width[tid]
         self.tex_modder.rand_all('skybox')
+
     
     def mod_lights(self):
         """Randomize pos, direction, and lights"""
@@ -307,7 +316,7 @@ class ArenaModder(object):
 
     def mod_extra_robot_parts(self, visible=True):
         """add distractor parts of robots in the lower area of the camera frame"""
-        self._set_visible("robot_part", 3, visible=True)
+        self._set_visible("robot_part", 3, visible)
         if not visible:
             return 
         # Project difference into camera coordinate frame
@@ -353,7 +362,7 @@ class ArenaModder(object):
     def mod_extra_arena_structure(self, visible=True):
         """add randomized structure of the arena in the background with 
         pillars and a crossbar"""
-        self._set_visible("arena_structure", 16, visible=False)
+        self._set_visible("arena_structure", 16, visible)
         if not visible:
             return 
 
@@ -403,8 +412,21 @@ class ArenaModder(object):
     def mod_extra_arena_background(self, visible=True):
         """add some billboards in the back that are more realistic scenes to not
         get distracted by"""
-        self._set_visible("billboard", 0, visible=False)
-        pass
+        self._set_visible("billboard", 0, visible)
+        if not visible:
+            return
+        
+        STARTY = DIGY + 5.0
+        ENDY = DIGY + 10.0
+        BOARD_SIZE = Range3D([10.0, 20.0], [0.1, 0.1], [10.0, 20.05])
+        BOARD_RANGE = Range3D([0.0, 0.0], [STARTY, ENDY], [0.0, 5.0])
+
+        name = "billboard"
+        board_bid = self.model.body_name2id(name)
+        board_gid = self.model.geom_name2id(name)
+
+        self.model.body_pos[board_bid] = sample_xyz(BOARD_RANGE)
+        self.model.geom_size[board_gid] = sample_xyz(BOARD_SIZE)
 
     def mod_extras(self, visible=True):
         """
@@ -429,7 +451,7 @@ class ArenaModder(object):
             visible = False
         self.mod_extra_judges(visible)
         self.mod_extra_arena_structure(visible)
-        self.mod_extra_arena_background(visible)
+        self.mod_extra_arena_background(visible=False)
         # maybe TODO: mod the extra external lights around the arena
     
     def mod_walls(self):
@@ -459,6 +481,9 @@ class ArenaModder(object):
     
     def mod_dirt(self):
         """Randomize position and rotation of dirt"""
+        # TODO: 50% chance to flip the dirt pile upsidedown, then we will have 
+        # to account for this in calculations
+
         # dirt stuff
         DIRT_RX = Range(0.0, 0.3)
         DIRT_RY = Range(0.0, 0.3)
@@ -658,13 +683,12 @@ class ArenaModder(object):
         #line_pos = self.floor_offset + np.array([0.0, 0.75, 0.0])
         #self.viewer.add_marker(pos=line_pos)
 
-        r0_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock0')]
-        r1_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock1')]
-        r2_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock2')]
-    
-        r1_diff = r1_pos - cam_pos
-        r2_diff = r2_pos - cam_pos
-        r0_diff = r0_pos - cam_pos
+        ##r0_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock0')]
+        ##r1_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock1')]
+        ##r2_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock2')]
+        ##r0_diff = r0_pos - cam_pos
+        ##r1_diff = r1_pos - cam_pos
+        ##r2_diff = r2_pos - cam_pos
     
         ground_truth = np.zeros(9, dtype=np.float32)
         for i, slot in enumerate(rock_mod_cache):
@@ -689,8 +713,9 @@ class ArenaModder(object):
             ground_truth[3*i+0] = in_cam_frame[0]
             ground_truth[3*i+1] = in_cam_frame[1]
             ground_truth[3*i+2] = in_cam_frame[2]
-            text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
-            #text = "height:{0:.2f}".format(z_height)
+            text = "{0} x: {1:.2f} y: {2:.2f} height:{3:.2f}".format(name, ground_truth[3*i+0], ground_truth[3*i+1], z_height)
+            ##text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
+            ##text = "height:{0:.2f}".format(z_height)
             if self.visualize:
                 self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
 

@@ -14,6 +14,6 @@ round1 = np.array([
     ])
 
 
-print(np.sum(practice, axis=0))
-print(np.sum(round1, axis=0))
+print(np.mean(practice, axis=0))
+print(np.mean(round1, axis=0))
 

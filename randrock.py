@@ -3,6 +3,7 @@ import bpy
 #import xml.etree.ElementTree as ET
 import json
 import ast
+from random import uniform
 
 
 def make_settings():
@@ -19,9 +20,15 @@ def make_settings():
         size = preset["size"]
 
         x, y, z = size["scale"]
-        scale_X = [float(x["lower"]), float(x["upper"])]
-        scale_Y = [float(y["lower"]), float(y["upper"])]
-        scale_Z = [float(z["lower"]), float(z["upper"])]
+        if title == "Default":
+            scale = uniform(float(x["lower"]), float(x["upper"]))
+            scale_X = [scale, scale]
+            scale_Y = [scale, scale]
+            scale_Z = [scale, scale]
+        else:
+            scale_X = [float(x["lower"]), float(x["upper"])]
+            scale_Y = [float(y["lower"]), float(y["upper"])]
+            scale_Z = [float(z["lower"]), float(z["upper"])]
 
         x, y, z = size["skew"]
         skew_X = float(x["value"])
@@ -110,11 +117,11 @@ for i in range(3):
     #import pdb; pdb.set_trace()
     #print(bpy.data.objects)
 
-    #rock_name = bpy.data.objects.keys()[0]
-    #bpy.data.objects[rock_name].location.x = 0
-    #bpy.data.objects[rock_name].location.y = 0
-    #bpy.data.objects[rock_name].location.z = 0
-    
+    bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY")
+    rock_name = bpy.data.objects.keys()[0]
+    bpy.data.objects[rock_name].location.x = 0
+    bpy.data.objects[rock_name].location.y = 0
+    bpy.data.objects[rock_name].location.z = 0
     
     #bpy.ops.object.modifier_add(type='DECIMATE')
     #bpy.data.objects["rock"].modifiers["Decimate"].ratio = 0.1

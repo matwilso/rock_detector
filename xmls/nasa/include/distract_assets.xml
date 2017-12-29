@@ -96,7 +96,8 @@
 		<material name="arena_structure15_mat" shininess="0.03" specular="0.75" texture="arena_structure15_tex"></material>
 
 		# Billboard to display image
-		<texture  name="billboard_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture  name="billboard_tex" builtin="none" height="256" width="256" rgb1="1 1 1" type="cube"></texture>
+		<!--fileright="img0.png" fileleft="img1.png" fileup="img2.png" filedown="img3.png" filefront="img4.png" fileback="img5.png"></texture>-->
 		<material name="billboard_mat" shininess="0.03" specular="0.75" texture="billboard_tex"></material>
 
 

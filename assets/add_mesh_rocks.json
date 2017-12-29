@@ -1,23 +1,22 @@
 {
   "settings": {
     "default": {
-      "title": "Default",
-      "size": {
+      "title": "Default", "size": {
         "scale": [
           {
             "axis": "X",
-            "lower": "1.0",
-            "upper": "1.0"
+            "lower": "0.75",
+            "upper": "1.5"
           },
           {
             "axis": "Y",
-            "lower": "1.0",
-            "upper": "1.0"
+            "lower": "0.75",
+            "upper": "1.5"
           },
           {
             "axis": "Z",
-            "lower": "1.0",
-            "upper": "1.0"
+            "lower": "0.75",
+            "upper": "1.5"
           }
         ],
         "skew": [

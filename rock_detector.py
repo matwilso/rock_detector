@@ -14,7 +14,13 @@ from threading import Thread, Event
 from queue import Queue
 
 # TODO: create some verification images with ground truths that you know,
-# using Gazebo or Bullet or (preferably) in the real world
+# using Gazebo or Bullet or preferably in the real world
+
+# TODO: create a better scheme for randomizing the rocks.  like maybe have a 
+# set of 20 or so that get swapped in and out
+
+# TODO: start everything in a separate thread or process and I can have each thread 
+# running with a different version of the xml to load different heights
 
 # TODO: add billboard in background with sampled images, including of
 # the actual competition area
@@ -74,6 +80,9 @@ def parse_command_line():
         '--batch_size', type=int, default=24,
         help='Batch size for training and evaluation.')
     parser.add_argument(
+        '--learning_rate', type=float, default=1e-4,
+        help='Learning rate for training')
+    parser.add_argument(
         '--visualize', type=str2bool, default=False,
         help="Don't train, just interact with the mujoco sim and visualize everything")
     parser.add_argument(
@@ -91,14 +100,11 @@ def parse_command_line():
     parser.add_argument(
         '--load_path', type=str, default='weights/model.ckpt',
         help='File to load weights from')
-    parser.add_argument(
-        '--dtype', type=str, default='cpu',
-        help='cpu or gpu')
+    ##parser.add_argument(
+    ##    '--dtype', type=str, default='cpu',
+    ##    help='cpu or gpu')
     parser.add_argument(
         '--blender_path', type=str, default='blender', help='Path to blender executable')
-    parser.add_argument(
-        '--os', type=str, default='none',
-        help='mac or ubuntu or none (don\'t override any defaults)')
     parser.add_argument(
         '--clean_log', type=str2bool, default=False,
         help='Delete previous tensorboard logs and start over')
@@ -143,7 +149,7 @@ def evaluate():
     ##    test_batch_imgs = np.stack(batch_split_imgs[0])
     ##    test_batch_truths = np.stack(batch_split_truths[0])
 
-    val_loss, predictions, summary = sess.run([loss, pred_tf, loss_summary], {img_input : test_batch_imgs, real_output : test_batch_truths})
+    val_loss, predictions, summary = sess.run([mean_loss, pred_tf, mean_loss_summary], {img_input : test_batch_imgs, real_output : test_batch_truths})
     test_writer.add_summary(summary)
 
     # Add plots
@@ -243,8 +249,8 @@ def summary_plots(grounds, preds):
     ts = 100*np.arange(len(ground_summary_hist))
     fig = plt.figure()
     plt.title('X')
-    plt.plot(ts, gmxs, label='Ground')
-    plt.plot(ts, pmxs, label='Pred')
+    plt.plot(ts, gmxs, '-o', label='Ground')
+    plt.plot(ts, pmxs, '-o', label='Pred')
     plt.legend(loc='best')
     fig.canvas.draw()
     X = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
@@ -252,12 +258,12 @@ def summary_plots(grounds, preds):
     plt.clf()
 
     plt.title('Y')
-    plt.plot(ts, glys, label='Left Ground')
-    plt.plot(ts, plys, label='Left Pred')
-    plt.plot(ts, gmys, label='Mid Ground')
-    plt.plot(ts, pmys, label='Mid Pred')
-    plt.plot(ts, grys, label='Right Ground')
-    plt.plot(ts, prys, label='Right Pred')
+    plt.plot(ts, glys, '-o', label='Left Ground')
+    plt.plot(ts, plys, '-o', label='Left Pred')
+    plt.plot(ts, gmys, '-o', label='Mid Ground')
+    plt.plot(ts, pmys, '-o', label='Mid Pred')
+    plt.plot(ts, grys, '-o', label='Right Ground')
+    plt.plot(ts, prys, '-o', label='Right Pred')
     plt.legend(loc='best')
     fig.canvas.draw()
     Y = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
@@ -265,8 +271,8 @@ def summary_plots(grounds, preds):
     plt.clf()
 
     plt.title('H')
-    plt.plot(ts, gmhs, label='Ground')
-    plt.plot(ts, pmhs, label='Pred')
+    plt.plot(ts, gmhs, '-o', label='Ground')
+    plt.plot(ts, pmhs, '-o', label='Pred')
     plt.legend(loc='best')
     fig.canvas.draw()
     H = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
@@ -276,6 +282,7 @@ def summary_plots(grounds, preds):
     return X, Y, H
 
 def train_loop():
+    """Training loop to feed model images and labels and update weights"""
     if not FLAGS.threaded:
         # Arena modder setup
         arena_modder = ArenaModder('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
@@ -300,10 +307,10 @@ def train_loop():
         ground_truths = np.stack(batch_ground_truths)
 
         if i % FLAGS.log_every != 0:
-            _, curr_loss, pred_output = sess.run([train_op, loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
+            check_op, _, curr_loss, pred_output = sess.run([check_op, train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
-            _, curr_loss, pred_output, tsumm  = sess.run([train_op, loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
+            _, curr_loss, pred_output, tsumm  = sess.run([train_op, mean_loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
             train_writer.add_summary(tsumm, i)
             matplotx, matploty, matploth = summary_plots(ground_truths, pred_output)
             psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
@@ -330,10 +337,12 @@ def main():
         evaluate()
     else:
         if FLAGS.threaded:
-            # start the chain thread
+            # start the train thread
             train_thread = Thread(target=train_loop, daemon=True)
             train_thread.start()
             while True:
+                # keep starting data threads (I don't think the while loop is necessary,
+                # and is just a relic of an old idea)
                 data_thread = Thread(target=generate_data, daemon=True)
                 data_thread.start()
                 data_thread.join()
@@ -363,10 +372,6 @@ def just_visualize():
 
 if __name__ == '__main__':
     FLAGS = parse_command_line()
-    if FLAGS.os == 'mac':
-        FLAGS.blender_path = '/Applications/blender.app/Contents/MacOS/blender'
-    if FLAGS.os == 'ubuntu':
-        FLAGS.blender_path = 'blender'
 
     if FLAGS.visualize:
         just_visualize()
@@ -392,8 +397,9 @@ if __name__ == '__main__':
           tf.gfile.DeleteRecursively(FLAGS.logdir)
     tf.gfile.MakeDirs(FLAGS.logdir)
 
-    #with tf.device('/device:GPU:0'):
-    # Neural network setup
+
+    # NEURAL NETWORK DEFINITION
+    # (tf.keras VGG16, random weights not trained on imagenet, custom fc head layers)
     conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
     keras_vgg16 = tf.keras.models.Sequential()
     keras_vgg16.add(conv_section)
@@ -401,38 +407,43 @@ if __name__ == '__main__':
     keras_vgg16.add(tf.keras.layers.Dense(256, activation='relu', input_shape=(None, 512*7*7), name='fc1'))
     keras_vgg16.add(tf.keras.layers.Dense(64, activation='relu', name='fc2'))
     keras_vgg16.add(tf.keras.layers.Dense(9, activation='linear', name='predictions'))
-
+    # Print summary on architecture
     keras_vgg16.summary()
     #keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
     #                      loss='mean_squared_error',
     #                      metric='accuracy')
 
-    pred_tf = keras_vgg16.output
+    # Input image (224, 224, 3)
     img_input = keras_vgg16.input
-    
+    # Output vector of rock xy+height (9,)
+    pred_tf = keras_vgg16.output
     real_output = tf.placeholder(tf.float32, shape=(None, 9), name='real_output')
     
     # loss (sum of squares)
     loss = tf.reduce_sum(tf.square(real_output - pred_tf)) 
+    mean_loss = tf.reduce_mean(tf.square(real_output - pred_tf))
     # optimizer
-    optimizer = tf.train.AdamOptimizer(1e-4) # 1e-4 suggested from dom rand paper
+    optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate) # 1e-4 suggested from dom rand paper
 
-    # only train last layers
+    # freeze convolution weights and only train last, fully connected layers
     if FLAGS.freeze_conv: 
         last_layers = tf.trainable_variables('(?![block.*conv.*])')
         train_op = optimizer.minimize(loss, var_list=last_layers)
     else:
         train_op = optimizer.minimize(loss)
 
+    check_op = tf.add_check_numerics_ops()
+
+    # SUMMARY STUFF
     x_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='x_plot')
     y_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='y_plot')
     h_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='h_plot')
 
     input_summary = tf.summary.image('input', img_input, 10)
-    loss_summary = tf.summary.scalar('loss', loss)
+    mean_loss_summary = tf.summary.scalar('mean_loss', mean_loss)
     loss_hist = tf.summary.histogram('loss_histogram', loss)
 
-    train_summary = tf.summary.merge([input_summary, loss_summary, loss_hist])
+    train_summary = tf.summary.merge([input_summary, mean_loss_summary, loss_hist])
     x_summary_plot = tf.summary.image('plot_x', x_plot, 1)
     y_summary_plot = tf.summary.image('plot_y', y_plot, 1)
     h_summary_plot = tf.summary.image('plot_h', h_plot, 1)
@@ -445,6 +456,7 @@ if __name__ == '__main__':
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
 
+    # LOAD MODEL and run it!
     if FLAGS.load_path != '0':
         saver.restore(sess,  FLAGS.load_path)
         print('Model restored from '+FLAGS.load_path)

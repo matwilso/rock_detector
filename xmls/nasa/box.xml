@@ -5,12 +5,12 @@
 		<map znear=0.0001 />
 	</visual>
 	<asset>
-		<texture name="dirt_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture name="dirt_tex" builtin="flat"  height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="rock2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="floor_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<texture name="left_tex"  builtin="flat"  height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<texture name="left_tex"  builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="right_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="bin_tex"   builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<texture name="dig_tex"   builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -149,5 +149,4 @@
 		  <body pos="0 3.69 0.55">
              <geom name="dig" type="box" size="1.89 0.1 0.55" material="dig_mat"/>
 		 </body>
--->
 
