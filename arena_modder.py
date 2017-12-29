@@ -323,11 +323,11 @@ class ArenaModder(object):
         cam_pos = self.model.cam_pos[0]
         cam_quat = np.quaternion(*self.model.cam_quat[0])
         lower_range  = Range3D([0.0, 0.0], [-0.2, -0.3], [-0.2, -0.3])
-        lower_size = Range3D([0.2, 0.6], [0.01, 0.1], [0.01, 0.1])
+        lower_size = Range3D([0.2, 0.6], [0.01, 0.15], [0.01, 0.15])
         lower_angle = Range3D([-85.0, -95.0], [-180, 180], [-85, -95])
 
         upper_range  = Range3D([-0.6, 0.6], [-0.05, 0.05], [-0.05, 0.05])
-        upper_size = Range3D([0.005, 0.05], [0.005, 0.05], [0.05, 0.3])
+        upper_size = Range3D([0.005, 0.05], [0.005, 0.05], [0.01, 0.3])
         upper_angle = Range3D([-85.0, -95.0], [-180, 180], [-85, -95])
 
         name = "robot_part0"
@@ -343,7 +343,7 @@ class ArenaModder(object):
         if self.model.geom_type[lower_gid] == 5:
             self.model.geom_size[lower_gid][0] = self.model.geom_size[lower_gid][2]
 
-        for i in [1, 2]:
+        for i in range(1,10):
             name = "robot_part{}".format(i)
             upper_bid = self.model.body_name2id(name)
             upper_gid = self.model.geom_name2id(name)

@@ -6,6 +6,20 @@
 		<material name="robot_part1_mat" shininess="0.03" specular="0.75" texture="robot_part1_tex"></material>
 		<texture  name="robot_part2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="robot_part2_mat" shininess="0.03" specular="0.75" texture="robot_part2_tex"></material>
+		<texture  name="robot_part3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part3_mat" shininess="0.03" specular="0.75" texture="robot_part3_tex"></material>
+		<texture  name="robot_part4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part4_mat" shininess="0.03" specular="0.75" texture="robot_part4_tex"></material>
+		<texture  name="robot_part5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part5_mat" shininess="0.03" specular="0.75" texture="robot_part5_tex"></material>
+		<texture  name="robot_part6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part6_mat" shininess="0.03" specular="0.75" texture="robot_part6_tex"></material>
+		<texture  name="robot_part7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part7_mat" shininess="0.03" specular="0.75" texture="robot_part7_tex"></material>
+		<texture  name="robot_part8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part8_mat" shininess="0.03" specular="0.75" texture="robot_part8_tex"></material>
+		<texture  name="robot_part9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="robot_part9_mat" shininess="0.03" specular="0.75" texture="robot_part9_tex"></material>
 
 		# Distractor side objects
 		<texture  name="side_obj0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -96,7 +110,7 @@
 		<material name="arena_structure15_mat" shininess="0.03" specular="0.75" texture="arena_structure15_tex"></material>
 
 		# Billboard to display image
-		<texture  name="billboard_tex" builtin="none" height="256" width="256" rgb1="1 1 1" type="cube"></texture>
+		<texture  name="billboard_tex" builtin="flat" height="256" width="256" rgb1="1 1 1" type="cube"></texture>
 		<!--fileright="img0.png" fileleft="img1.png" fileup="img2.png" filedown="img3.png" filefront="img4.png" fileback="img5.png"></texture>-->
 		<material name="billboard_mat" shininess="0.03" specular="0.75" texture="billboard_tex"></material>
 

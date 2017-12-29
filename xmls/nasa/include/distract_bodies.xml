@@ -10,6 +10,27 @@
 	<body name="robot_part2" pos="0.0 0.0 0.0">
 		<geom name="robot_part2" type="box" size="0.1 0.1 0.1" material="robot_part2_mat"/>
 	</body>
+	<body name="robot_part3" pos="0.0 0.0 0.0">
+		<geom name="robot_part3" type="box" size="0.1 0.1 0.1" material="robot_part3_mat"/>
+	</body>
+	<body name="robot_part4" pos="0.0 0.0 0.0">
+		<geom name="robot_part4" type="box" size="0.1 0.1 0.1" material="robot_part4_mat"/>
+	</body>
+	<body name="robot_part5" pos="0.0 0.0 0.0">
+		<geom name="robot_part5" type="box" size="0.1 0.1 0.1" material="robot_part5_mat"/>
+	</body>
+	<body name="robot_part6" pos="0.0 0.0 0.0">
+		<geom name="robot_part6" type="box" size="0.1 0.1 0.1" material="robot_part6_mat"/>
+	</body>
+	<body name="robot_part7" pos="0.0 0.0 0.0">
+		<geom name="robot_part7" type="box" size="0.1 0.1 0.1" material="robot_part7_mat"/>
+	</body>
+	<body name="robot_part8" pos="0.0 0.0 0.0">
+		<geom name="robot_part8" type="box" size="0.1 0.1 0.1" material="robot_part8_mat"/>
+	</body>
+	<body name="robot_part9" pos="0.0 0.0 0.0">
+		<geom name="robot_part9" type="box" size="0.1 0.1 0.1" material="robot_part9_mat"/>
+	</body>
 
 
 	# Distractor side objects
