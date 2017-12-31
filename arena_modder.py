@@ -35,14 +35,11 @@ DIG_LEN = 2.94
 SZ_ENDY = BINY + SZ_LEN 
 OBS_SY = SZ_ENDY
 OBS_ENDY = OBS_SY + OBS_LEN
-IMAGE_NOISE_RVARIANCE = Range(0.0, 0.0001)
 
 class ArenaModder(BaseModder):
     """
     Object to handle randomization of all relevant properties of Mujoco sim
 
-    forward()
-    get_cam_frame()
     randomize()
     mod_textures()
     mod_lights()
@@ -56,7 +53,7 @@ class ArenaModder(BaseModder):
     mod_walls()
     mod_dirt()
     mod_rocks()
-    randrocks()
+    get_ground_truth()
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -72,6 +69,8 @@ class ArenaModder(BaseModder):
         self.tex_modder = TextureModder(self.sim)
         self.cam_modder = CameraModder(self.sim)
         self.light_modder = LightModder(self.sim)
+        
+        # Set these both externally to visualize
         self.visualize = False
         self.viewer = None
 
@@ -129,7 +128,7 @@ class ArenaModder(BaseModder):
         CAM_RY = Range(BINY+0.2, SZ_ENDY)
         CAM_RZ = Range(AFZ + ZLOW, AFZ + ZHIGH)
         CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
-        CAM_RYAW = Range(-100, -80)
+        CAM_RYAW = Range(-95, -85)
         CAM_RPITCH = Range(65, 90)
         CAM_RROLL = Range(88, 92) # this might actually be pitch?
         CAM_ANGLE3 = Range3D(CAM_RYAW, CAM_RPITCH, CAM_RROLL)

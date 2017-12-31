@@ -1,4 +1,4 @@
-t!/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import os.path
 import pickle
@@ -12,6 +12,7 @@ from utils import display_image, preproc_image, print_rocks, str2bool
 import matplotlib.pyplot as plt
 from threading import Thread, Event
 from queue import Queue
+from multiprocessing import set_start_method
 
 # TODO: create some verification images with ground truths that you know,
 # using Gazebo or Bullet or preferably in the real world
@@ -125,6 +126,9 @@ def parse_command_line():
     parser.add_argument(
         '--threaded', type=str2bool, default=True,
         help='Multithread image generation and model training')
+    parser.add_argument(
+        '--num_sims', type=int, default=1,
+        help='Number of sims to run in render pool')
 
     # Parse command line arguments
     FLAGS, _ = parser.parse_known_args()
@@ -170,47 +174,45 @@ def evaluate():
     print('round1')
     print_rocks(predictions[1])
 
-def arena_sampler(arena_modder):
+def arena_sampler(sim_manager):
     """
     Generator to randomize all relevant parameters, return an image and the 
     ground truth labels for the rocks in the image
     """
     for i in itertools.count(1):
         # Randomize (mod) all relevant parameters
-        arena_modder.randomize()
-        arena_modder.forward()
+        #sim_manager.randomize()
         
         # Grab cam frame and convert pixel value range from (0, 255) to (-0.5, 0.5)
-        cam_img = arena_modder.get_cam_frame()
-        rock_ground_truth = arena_modder.get_ground_truth()
-        ##camid = arena_modder.cam_modder.get_camid('camera1')
-        ##cam_fovy = arena_modder.model.cam_fovy[camid]
-        ##display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
+        if FLAGS.num_sims > 1:
+            cam_imgs, rock_ground_truths = sim_manager.get_data()
+            for img, truth in zip(cam_imgs, rock_ground_truths):
+                img = (img.astype(np.float32) - 127.5) / 255
+                yield img, truth
+        else:
+            #sim_manager.forward()
+            cam_img, rock_ground_truth = sim_manager.get_data()
+            #camid = sim_manager.arena_modder.cam_modder.get_camid('camera1')
+            #cam_fovy = sim_manager.arena_modder.model.cam_fovy[camid]
+            #display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
+    
+            ##for r in rock_ground_truth:
+            ##    print('{0:.2f}'.format(r), end=', ')
+            ##print()
+            ##plt.imshow(cam_img)
+            ##plt.show()
+            cam_img = (cam_img.astype(np.float32) - 127.5) / 255
+            yield cam_img, rock_ground_truth
 
-        ##for r in rock_ground_truth:
-        ##    print('{0:.2f}'.format(r), end=', ')
-        ##print()
-        ##plt.imshow(cam_img)
-        ##plt.show()
-
-        cam_img = (cam_img.astype(np.float32) - 127.5) / 255
-        yield cam_img, rock_ground_truth
 
 def generate_data():
     """Loop to generate data in separate thread to feed the training loop"""
-
-
-    if self.simpool:
-        self.pool = MjRenderPool.create_from_sim(self.sim, self.simpool)
-
-
-
     try:
         # Arena modder setup
-        arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+        sim_manager = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize, num_sims=FLAGS.num_sims)
 
         for i in itertools.count(1):
-            sampler = arena_sampler(arena_modder)
+            sampler = arena_sampler(sim_manager)
             (cam_img, rock_ground_truth) = next(sampler)
             data_queue.put((cam_img, rock_ground_truth))
             
@@ -218,7 +220,7 @@ def generate_data():
                 print('queue_size = {}'.format(data_queue.qsize()))
 
             if super_batch_event.is_set():
-                arena_modder.randrocks()
+                sim_manager.randrocks()
                 return
     except Exception as e:
         print("CRASH EVENT: {}".format(e))
@@ -296,8 +298,8 @@ def train_loop():
     """Training loop to feed model images and labels and update weights"""
     if not FLAGS.threaded:
         # Arena modder setup
-        arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
-        sampler = arena_sampler(arena_modder)
+        sim_manager = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+        sampler = arena_sampler(sim_manager)
 
     for i in itertools.count(1):
         batch_imgs = []
@@ -318,7 +320,7 @@ def train_loop():
         ground_truths = np.stack(batch_ground_truths)
 
         if i % FLAGS.log_every != 0:
-            check_op, _, curr_loss, pred_output = sess.run([check_op, train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
+            _, _, curr_loss, pred_output = sess.run([check_op, train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
             _, curr_loss, pred_output, tsumm  = sess.run([train_op, mean_loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
@@ -335,7 +337,7 @@ def train_loop():
         if i % FLAGS.super_batch == 0:
             super_batch_event.set()
             if not FLAGS.threaded:
-                arena_modder.randrocks()
+                sim_manager.randrocks()
             return 
         if crash_event.is_set():
             return
@@ -371,14 +373,15 @@ def main():
 
 def just_visualize():
     """Don't do any training, just loop through all the samples"""
-    # Arena modder setup
-    arena_modder = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
-    sampler = arena_sampler(arena_modder)
+    # Sim manager setup
+    sim_manager = SimManager('xmls/nasa/box.xml', blender_path=FLAGS.blender_path, visualize=FLAGS.visualize)
+    sampler = arena_sampler(sim_manager)
     for i in itertools.count(1):
+        sim_manager.forward()
         next(sampler)
 
         if i % FLAGS.super_batch == 0:
-            arena_modder.randrocks()
+            sim_manager.randrocks()
             return 
 
 if __name__ == '__main__':
@@ -476,4 +479,6 @@ if __name__ == '__main__':
         init = tf.global_variables_initializer()
         sess.run(init)
 
+    if FLAGS.num_sims > 1:
+        set_start_method('spawn')
     main()

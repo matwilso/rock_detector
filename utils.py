@@ -45,13 +45,15 @@ def print_rocks(arr):
         print("rock{0:d} x: {1:.2f}, y: {2:.2f}, h: {3:.2f}".format(i+1, r[0], r[1], r[2]))
 
 # IMAGE UTILS
-def preproc_image(img, width=640):
-    if width == 1280:
+def preproc_image(img):
+    if img.shape[1] == 1280:
         crop = img[24:-24, 80:-80, :]
         down_sample = crop[::3, ::5, :]
-    elif width == 640:
-        crop = img[12:-12, 40:-40, :]
-        down_sample = crop[::3, ::5, :]
+    elif img.shape[1] == 640:
+        crop = img[68:-68, 96:-96, :]
+        down_sample = crop[::, ::2, :]
+    else:
+        raise Exception("Image must be 16:9, width 1280 or 640")
     return down_sample 
 
 def display_image(cam_img, label):

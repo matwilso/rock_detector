@@ -7,7 +7,6 @@ from time import perf_counter
 
 from mujoco_py import load_model_from_path, MjRenderPool
 
-
 def main():
     # Image size for rendering
     IMAGE_WIDTH = 640
@@ -16,9 +15,9 @@ def main():
     N_FRAMES = 1
     # Number of sims to run in parallel (assumes one per GPU),
     # so N_SIMS=2 assumes there are 2 GPUs available.
-    N_SIMS = 2 
+    N_SIMS = 1 
 
-    pool = MjRenderPool(load_model_from_path("xmls/tosser.xml"), device_ids=N_SIMS)
+    pool = MjRenderPool(load_model_from_path("xmls/tosser.xml"), device_ids=N_SIMS, n_workers=2)
 
     print("main(): start benchmarking", flush=True)
     start_t = perf_counter()
