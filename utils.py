@@ -46,14 +46,13 @@ def print_rocks(arr):
 
 # IMAGE UTILS
 def preproc_image(img):
-    if img.shape[1] == 1280:
-        crop = img[24:-24, 80:-80, :]
-        down_sample = crop[::3, ::5, :]
-    elif img.shape[1] == 640:
-        crop = img[68:-68, 96:-96, :]
-        down_sample = crop[::, ::2, :]
-    else:
-        raise Exception("Image must be 16:9, width 1280 or 640")
+    """Chop off edges and then downsample to (224, 224, 3)"""
+    hdiv, hcrop = img.shape[0] // 224, (img.shape[0] % 224) // 2
+    wdiv, wcrop = img.shape[1] // 224, (img.shape[1] % 224) // 2
+
+    crop = img[hcrop:-hcrop, wcrop:-wcrop, :]
+    down_sample = crop[::hdiv, ::wdiv, :]
+
     return down_sample 
 
 def display_image(cam_img, label):
