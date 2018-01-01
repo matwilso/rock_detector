@@ -47,6 +47,11 @@ def print_rocks(arr):
 # IMAGE UTILS
 def preproc_image(img):
     """Chop off edges and then downsample to (224, 224, 3)"""
+    if img.shape[-1] == 4:
+        img = img[:, :, :3]
+    if img.shape == (224, 224, 3):
+        return img
+
     hdiv, hcrop = img.shape[0] // 224, (img.shape[0] % 224) // 2
     wdiv, wcrop = img.shape[1] // 224, (img.shape[1] % 224) // 2
 

@@ -14,14 +14,8 @@ from threading import Thread, Event
 from queue import Queue
 from multiprocessing import set_start_method
 
-# TODO: create some verification images with ground truths that you know,
-# using Gazebo or Bullet or preferably in the real world
-
-# TODO: start everything in a separate thread or process and I can have each thread 
-# running with a different version of the xml to load different heights
-# i think the way i am going to do this is via render pool with a render_callback
-# This is under the assumption that rendering takes much longer than updating sim
-# I think I should run some tests first
+# TODO: add more background randomization, including lighting to better match the 
+# competition images
 
 # TODO: create a better scheme for randomizing the rocks.  like maybe have a 
 # set of 20 or so that get swapped in and out
@@ -146,7 +140,8 @@ def evaluate():
     for line in data:
         ground_truth = line[0]
         filepath = line[1]
-        test_imgs.append(preproc_image(plt.imread(data_path+filepath)))
+        img = preproc_image(plt.imread(data_path+filepath))
+        test_imgs.append(img)
         test_truths.append(np.array(ground_truth))
 
     test_batch_imgs = np.stack(test_imgs)
@@ -169,10 +164,17 @@ def evaluate():
     psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
     test_writer.add_summary(psumm)
 
-    print('practice')
-    print_rocks(predictions[0])
-    print('round1')
-    print_rocks(predictions[1])
+    ##print('practice')
+    ##print_rocks(predictions[0])
+    ##print('round1')
+    ##print_rocks(predictions[1])
+    for i in range(len(predictions)):
+        pred = predictions[i]
+        line = data[i]
+        ground_truth = line[0]
+        filepath = line[1]
+        print(filepath)
+        print_rocks(pred)
 
 def arena_sampler(sim_manager):
     """
@@ -216,7 +218,7 @@ def generate_data():
             (cam_img, rock_ground_truth) = next(sampler)
             data_queue.put((cam_img, rock_ground_truth))
             
-            if (data_queue.qsize() != 1):
+            if (data_queue.qsize() > 9):
                 print('queue_size = {}'.format(data_queue.qsize()))
 
             if super_batch_event.is_set():
@@ -392,9 +394,9 @@ if __name__ == '__main__':
         exit(0)
 
     # try to load summary histories from file
-    if os.path.isfile(FLAGS.logdir+'summary.pkl'):
+    if os.path.isfile(FLAGS.logdir+'ssummary.pkl'):
         try:
-            with open(FLAGS.logdir+'summary.pkl', 'rb') as f:
+            with open(FLAGS.logdir+'ssummary.pkl', 'rb') as f:
                 ground_summary_hist, pred_summary_hist = pickle.load(f)
         except:
             ground_summary_hist = []
@@ -435,7 +437,7 @@ if __name__ == '__main__':
     
     # loss (sum of squares)
     loss = tf.reduce_sum(tf.square(real_output - pred_tf)) 
-    mean_loss = tf.reduce_mean(tf.square(real_output - pred_tf))
+    mean_loss = tf.reduce_mean(tf.reduce_sum(tf.square(real_output - pred_tf), 1))
     # optimizer
     optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate) # 1e-4 suggested from dom rand paper
 
