@@ -117,6 +117,14 @@ def sample_xyz(range3d):
     z = sample(range3d[2])
     return (x, y, z)
 
+def sample_light_dir():
+    """Sample a random direction for a light. I don't quite understand light dirs so
+    this might be wrong"""
+    # Pretty sure light_dir is just the xyz of a quat with w = 0.
+    # I random sample -1 to 1 for xyz, normalize the quat, and then set the tuple (xyz) as the dir
+    LIGHT_DIR = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
+    return np.quaternion(0, *sample_xyz(LIGHT_DIR)).normalized().components.tolist()[1:]
+
 def sample_quat(angle3):
     """Sample a quaterion from a range of euler angles in degrees"""
     roll = sample(angle3[0]) * np.pi / 180

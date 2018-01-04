@@ -10,7 +10,7 @@ from mujoco_py.modder import BaseModder, CameraModder, LightModder, MaterialModd
 
 from utils import preproc_image, display_image
 from utils import Range, Range3D, rto3d # object type things
-from utils import sample, sample_from_list, sample_xyz, sample_quat, sample_geom_type, random_quat, jitter_quat 
+from utils import sample, sample_from_list, sample_xyz, sample_light_dir, sample_quat, sample_geom_type, random_quat, jitter_quat 
 
 # TODO: set the arena center bin is 0,0
 
@@ -106,19 +106,17 @@ class ArenaModder(BaseModder):
         LIGHT_RY = Range(BINY, DIGY)
         LIGHT_RZ = Range(AFZ, AFZ + ZHIGH)
         LIGHT_RANGE3D = Range3D(LIGHT_RX, LIGHT_RY, LIGHT_RZ)
-        LIGHT_DIR3 = Range3D(Range(-1,1), Range(-1,1), Range(-1,1))
+        LIGHT_UNIF = Range3D(Range(0,1), Range(0,1), Range(0,1))
 
         for i, name in enumerate(self.model.light_names):
             # random sample 50% of any given light being on 
-            self.light_modder.set_active(name, random.uniform(0, 1) > 0.5)
-    
-            # Pretty sure light_dir is just the xyz of a quat with w = 0.
-            # I random sample -1 to 1 for xyz, normalize the quat, and then set the tuple (xyz) as the dir
-            dir_xyz = np.quaternion(0, *sample_xyz(LIGHT_DIR3)).normalized().components.tolist()[1:]
+            self.light_modder.set_active(name, sample([0,1]) > 0.5)
+            dir_xyz = sample_light_dir()
             self.light_modder.set_pos(name, sample_xyz(LIGHT_RANGE3D))
             self.light_modder.set_dir(name, dir_xyz)
-            self.light_modder.set_specular(name, sample_xyz(LIGHT_DIR3))
-            self.light_modder.set_diffuse(name, sample_xyz(LIGHT_DIR3))
+            self.light_modder.set_specular(name, sample_xyz(LIGHT_UNIF))
+            self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
+            self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
     
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
@@ -277,10 +275,7 @@ class ArenaModder(BaseModder):
             self.model.body_pos[judge_bid] = sample_xyz(digwall_range)
 
             # 50% chance of invisible 
-            if sample([0,1]) > 0.5:
-                self.model.geom_rgba[judge_gid][-1] = 0.0
-            else:
-                self.model.geom_rgba[judge_gid][-1] = 1.0
+            self.model.geom_rgba[judge_gid][-1] = sample([0,1]) > 0.5
 
     def mod_extra_robot_parts(self, visible=True):
         """add distractor parts of robots in the lower area of the camera frame"""
@@ -396,6 +391,26 @@ class ArenaModder(BaseModder):
         self.model.body_pos[board_bid] = sample_xyz(BOARD_RANGE)
         self.model.geom_size[board_gid] = sample_xyz(BOARD_SIZE)
 
+    def mod_extra_lights(self, visible=True):
+        MODE_TARGETBODY = 3
+        STARTY = DIGY + 5.0
+        ENDY = DIGY + 10.0
+        LIGHT_RANGE = Range3D([0.0, 0.0], [STARTY, ENDY], [0.0, 5.0])
+
+        for i in range(3):
+            name = "extra_light{}".format(i)
+            lid = self.model.light_name2id(name)
+            self.model.light_active[lid] = visible
+            if not visible:
+                return
+
+            self.model.light_mode[lid] = 3
+            floor_bid = self.model.body_name2id("floor")
+            self.model.light_targetbodyid[lid] = floor_bid
+            self.model.light_pos[lid] = sample_xyz(LIGHT_RANGE)
+            self.model.light_dir[lid] = sample_light_dir()
+
+
     def mod_extras(self, visible=True):
         """
         Randomize extra properties of the world such as the extra rocks on the side
@@ -419,8 +434,8 @@ class ArenaModder(BaseModder):
             visible = False
         self.mod_extra_judges(visible)
         self.mod_extra_arena_structure(visible)
-        self.mod_extra_arena_background(visible=False)
-        # maybe TODO: mod the extra external lights around the arena
+        self.mod_extra_arena_background(visible=False) # disabled bcuz sux 
+        self.mod_extra_lights(visible)
     
     def mod_walls(self):
         """

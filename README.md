@@ -100,10 +100,11 @@ unzip add_mesh_rocks.zip
 <a name="mujoco"></a>
 # Mujoco Tips
 
-- More documentation on lighting can be found here: http://www.glprogramming.com/red/chapter05.html#name10
 - You need to call sim.forward() or sim.step() to get the camera and light modders to update
 - You can't scale a mesh after it has been loaded (http://www.mujoco.org/forum/index.php?threads/how-to-scale-already-exist-model.3483/)
 - Read this: https://github.com/openai/mujoco-py/issues/148 and this: https://github.com/openai/gym/issues/234
+- The maximum number of lights that can be active simultaneously is 8, counting the headlight
+- More documentation on lighting can be found here: http://www.glprogramming.com/red/chapter05.html#name10
 - To make it so cameras don't look through walls, you need to add:
 
 ```

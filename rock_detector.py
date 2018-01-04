@@ -17,8 +17,7 @@ from multiprocessing import set_start_method
 # TODO: add more background randomization, including lighting to better match the 
 # competition images
 
-
-# TODO: right some history of the predictions of the rock positions in the image to
+# TODO: write some history of the predictions of the rock positions in the image to
 # a csv file so that we can validate accuracy over time.  Every 100 samples, make
 # a new row or something
 

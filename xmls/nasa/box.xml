@@ -55,11 +55,12 @@
 
 	<worldbody>
 	  arbitrary shitton of lights
-	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 -1 -0.5"/>
+	  <light name="light0" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <light name="light1" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light2" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light3" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light4" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
-	  <light name="light5" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  <!--
 	  <light name="light6" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light7" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light8" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
@@ -70,9 +71,11 @@
 	  <light name="light13" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light14" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
 	  <light name="light15" diffuse="1.5 1.5 1.5" pos="-2.29 0.0 3" dir="0 0 -1"/>
+	  -->
 
 	  <camera name="camera1" pos="-2.29 -4.0 2.0" euler="80 0 0"/>
 
+	  <include file="include/distract_lights.xml"></include>
 
 	  <!--
 	  <light name="light3" pos="-2.29 -0.1 1" dir="0 -1 -1" diffuse="1 1 1"/>
