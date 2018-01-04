@@ -109,6 +109,29 @@
 		<texture  name="arena_structure15_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="arena_structure15_mat" shininess="0.03" specular="0.75" texture="arena_structure15_tex"></material>
 
+		# light discs to make outer arena "brighter"
+		<texture  name="light_disc0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc0_mat" shininess="0.03" specular="0.75" texture="light_disc0_tex"></material>
+		<texture  name="light_disc1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc1_mat" shininess="0.03" specular="0.75" texture="light_disc1_tex"></material>
+		<texture  name="light_disc2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc2_mat" shininess="0.03" specular="0.75" texture="light_disc2_tex"></material>
+		<texture  name="light_disc3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc3_mat" shininess="0.03" specular="0.75" texture="light_disc3_tex"></material>
+		<texture  name="light_disc4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc4_mat" shininess="0.03" specular="0.75" texture="light_disc4_tex"></material>
+		<texture  name="light_disc5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc5_mat" shininess="0.03" specular="0.75" texture="light_disc5_tex"></material>
+		<texture  name="light_disc6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc6_mat" shininess="0.03" specular="0.75" texture="light_disc6_tex"></material>
+		<texture  name="light_disc7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc7_mat" shininess="0.03" specular="0.75" texture="light_disc7_tex"></material>
+		<texture  name="light_disc8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc8_mat" shininess="0.03" specular="0.75" texture="light_disc8_tex"></material>
+		<texture  name="light_disc9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="light_disc9_mat" shininess="0.03" specular="0.75" texture="light_disc9_tex"></material>
+
+
 		# Billboard to display image
 		<texture  name="billboard_tex" builtin="flat" height="256" width="256" rgb1="1 1 1" type="cube"></texture>
 		<!--fileright="img0.png" fileleft="img1.png" fileup="img2.png" filedown="img3.png" filefront="img4.png" fileback="img5.png"></texture>-->

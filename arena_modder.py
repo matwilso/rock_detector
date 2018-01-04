@@ -40,20 +40,6 @@ class ArenaModder(BaseModder):
     """
     Object to handle randomization of all relevant properties of Mujoco sim
 
-    randomize()
-    mod_textures()
-    mod_lights()
-    mod_camera()
-    mod_extra_distractors()
-    mod_extra_judges()
-    mod_extra_robot_parts()
-    mod_extra_arena_structure()
-    mod_extra_arena_background()
-    mod_extras()
-    mod_walls()
-    mod_dirt()
-    mod_rocks()
-    get_ground_truth()
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -88,7 +74,7 @@ class ArenaModder(BaseModder):
     def mod_textures(self):
         """Randomize all the textures in the scene, including the skybox"""
         for name in self.sim.model.geom_names:
-            if name != "billboard":
+            if name != "billboard" and "light_disc" not in name:
                 self.tex_modder.rand_all(name)
                 ##texture_sizes = [32, 64, 128, 256, 512, 1024]
                 ##gid = self.model.geom_name2id(name)
@@ -112,13 +98,14 @@ class ArenaModder(BaseModder):
             lid = self.model.light_name2id(name)
             # random sample 50% of any given light being on 
             self.light_modder.set_active(name, sample([0,1]) > 0.5)
+            self.light_modder.set_active(name, 0)
             dir_xyz = sample_light_dir()
             self.light_modder.set_pos(name, sample_xyz(LIGHT_RANGE3D))
             self.light_modder.set_dir(name, dir_xyz)
             self.light_modder.set_specular(name, sample_xyz(LIGHT_UNIF))
             self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
             self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
-            self.model.light_directional[lid] = 1
+            #self.model.light_directional[lid] = sample([0,1]) > 0.99
     
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
@@ -394,11 +381,12 @@ class ArenaModder(BaseModder):
         self.model.geom_size[board_gid] = sample_xyz(BOARD_SIZE)
 
     def mod_extra_lights(self, visible=True):
+        """"""
+        #visible = False
         MODE_TARGETBODY = 3
         STARTY = DIGY + 3.0
         ENDY = DIGY + 5.0
         LIGHT_RANGE = Range3D([ACX - 2.0, ACX + 2.0], [STARTY, ENDY], [3.0, 5.0])
- 
 
         for i in range(3):
             name = "extra_light{}".format(i)
@@ -407,22 +395,71 @@ class ArenaModder(BaseModder):
             if not visible:
                 return
 
-            self.model.light_mode[lid] = 3
-            floor_bid = self.model.body_name2id("floor")
-            self.model.light_targetbodyid[lid] = floor_bid
             self.model.light_pos[lid] = sample_xyz(LIGHT_RANGE)
             self.model.light_dir[lid] = sample_light_dir()
-            self.model.light_directional[lid] = 1
+            self.model.light_directional[lid] = 0
 
+            # 20% chance of being directional light, washing out colors
+            # (P(at least 1 will be triggered) = 0.5)
+            self.model.light_directional[lid] = sample([0,1]) > 0.8
+
+    def mod_extra_light_discs(self, visible=True):
+        """"""
+        visible = True
+        self._set_visible("light_disc", 10, visible)
+        if not visible:
+            return
+
+        Z_JITTER = 0.05
+        DISC_XRANGE = Range(0.1, 5.0)
+        DISC_YRANGE = Range(0.1, 5.0)
+        DISC_ZRANGE = Range(0.1, 5.0)
+        DISC_SIZE_RANGE = Range3D(DISC_XRANGE, DISC_YRANGE, DISC_ZRANGE)
+
+        floor_gid = self.model.geom_name2id("floor")
+        floor_bid = self.model.body_name2id("floor")
+        c = self.model.body_pos[floor_bid]
+        disc_xrange = Range(c[0] - 20.0, c[0] + 20.0)
+        disc_yrange = Range(c[1], c[1] + 20.0)
+        disc_zrange = Range(0.0, 10.0)
+        disc_range = Range3D(disc_xrange, disc_yrange, disc_zrange)
+
+        for i in range(10):
+            name = "light_disc{}".format(i)
+            disc_bid = self.model.body_name2id(name)
+            disc_gid = self.model.geom_name2id(name)
+            disc_mid = self.model.geom_matid[disc_gid]
+
+            self.model.geom_quat[disc_gid] = random_quat() 
+            self.model.geom_size[disc_gid] = sample_xyz(DISC_SIZE_RANGE)
+            self.model.geom_type[disc_gid] = sample_geom_type()
+
+            while True:
+                xyz = sample_xyz(disc_range)
+
+                if ((xyz[0] > (c[0] - 10.0) and xyz[0] < (c[0] + 10.0)) and
+                   (xyz[1] > (c[1] - 10.0) and xyz[1] < (c[1] + 10.0))):
+                    continue
+                else:
+                    self.model.geom_pos[disc_gid] = xyz
+                    break
+
+            #self.model.geom_rgba[disc_gid][-1] = 0.0
+
+            ### 50% chance of invisible 
+            ##if sample([0,1]) > 0.5:
+            ##    self.model.geom_rgba[disc_gid][-1] = 0.0
+            ##else:
+            ##    self.model.geom_rgba[disc_gid][-1] = 1.0
 
     def mod_extras(self, visible=True):
         """
         Randomize extra properties of the world such as the extra rocks on the side
         of the arena wal
 
-        
         The motivation for these mods are that it seems likely that these distractor 
-        judgeects could degrade the performance of the detector. 
+        objects, judges, etc, in the real images could degrade the performance 
+        of the detector. 
 
         Artifacts:
         - Rocks and tools on edges of bin
@@ -433,13 +470,14 @@ class ArenaModder(BaseModder):
         """
         self.mod_extra_distractors(visible)
         self.mod_extra_robot_parts(visible)
+        self.mod_extra_lights(visible=True)
         # 10% of the time, hide the other distractor pieces
         if sample([0,1]) > 0.9:
             visible = False
         self.mod_extra_judges(visible)
         self.mod_extra_arena_structure(visible)
-        self.mod_extra_arena_background(visible=False) # disabled bcuz sux 
-        self.mod_extra_lights(visible=False)
+        self.mod_extra_arena_background(visible=False) # disabled bcuz it sux 
+        self.mod_extra_light_discs(visible)
     
     def mod_walls(self):
         """

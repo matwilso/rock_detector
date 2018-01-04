@@ -17,9 +17,14 @@ from multiprocessing import set_start_method
 # TODO: add more background randomization, including lighting to better match the 
 # competition images
 
+# TODO: randomize the size of the textures on the rocks so that they have different
+# resolutions
+
 # TODO: write some history of the predictions of the rock positions in the image to
 # a csv file so that we can validate accuracy over time.  Every 100 samples, make
 # a new row or something
+
+# TODO: refactor and clean things up a bit
 
 # TODO: create a better scheme for randomizing the rocks.  like maybe have a 
 # set of 20 or so that get swapped in and out

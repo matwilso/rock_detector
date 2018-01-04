@@ -162,9 +162,41 @@
 		<geom name="arena_structure15" type="box" size="0.1 0.1 0.1" material="arena_structure15_mat"/>
 	</body>
 
+	<body name="light_disc0" pos="0.0 0.0 0.0">
+		<geom name="light_disc0" type="box" size="0.1 0.1 0.1" material="light_disc0_mat"/>
+	</body>
+	<body name="light_disc1" pos="0.0 0.0 0.0">
+		<geom name="light_disc1" type="box" size="0.1 0.1 0.1" material="light_disc1_mat"/>
+	</body>
+	<body name="light_disc2" pos="0.0 0.0 0.0">
+		<geom name="light_disc2" type="box" size="0.1 0.1 0.1" material="light_disc2_mat"/>
+	</body>
+	<body name="light_disc3" pos="0.0 0.0 0.0">
+		<geom name="light_disc3" type="box" size="0.1 0.1 0.1" material="light_disc3_mat"/>
+	</body>
+	<body name="light_disc4" pos="0.0 0.0 0.0">
+		<geom name="light_disc4" type="box" size="0.1 0.1 0.1" material="light_disc4_mat"/>
+	</body>
+	<body name="light_disc5" pos="0.0 0.0 0.0">
+		<geom name="light_disc5" type="box" size="0.1 0.1 0.1" material="light_disc5_mat"/>
+	</body>
+	<body name="light_disc6" pos="0.0 0.0 0.0">
+		<geom name="light_disc6" type="box" size="0.1 0.1 0.1" material="light_disc6_mat"/>
+	</body>
+	<body name="light_disc7" pos="0.0 0.0 0.0">
+		<geom name="light_disc7" type="box" size="0.1 0.1 0.1" material="light_disc7_mat"/>
+	</body>
+	<body name="light_disc8" pos="0.0 0.0 0.0">
+		<geom name="light_disc8" type="box" size="0.1 0.1 0.1" material="light_disc8_mat"/>
+	</body>
+	<body name="light_disc9" pos="0.0 0.0 0.0">
+		<geom name="light_disc9" type="box" size="0.1 0.1 0.1" material="light_disc9_mat"/>
+	</body>
+
 	<body name="billboard" pos="0.0 0.0 0.0">
 		<geom name="billboard" type="box" size="0.01 10.0 10.0" material="billboard_mat"/>
 	</body>
+
 
 
 </distract>
