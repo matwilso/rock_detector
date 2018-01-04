@@ -109,7 +109,6 @@ class ArenaModder(BaseModder):
         LIGHT_UNIF = Range3D(Range(0,1), Range(0,1), Range(0,1))
 
         for i, name in enumerate(self.model.light_names):
-            lid = self.model.light_name2id(name)
             # random sample 50% of any given light being on 
             self.light_modder.set_active(name, sample([0,1]) > 0.5)
             dir_xyz = sample_light_dir()
@@ -118,7 +117,6 @@ class ArenaModder(BaseModder):
             self.light_modder.set_specular(name, sample_xyz(LIGHT_UNIF))
             self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
             self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
-            self.model.light_directional[lid] = 1
     
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
@@ -395,10 +393,9 @@ class ArenaModder(BaseModder):
 
     def mod_extra_lights(self, visible=True):
         MODE_TARGETBODY = 3
-        STARTY = DIGY + 3.0
-        ENDY = DIGY + 5.0
-        LIGHT_RANGE = Range3D([ACX - 2.0, ACX + 2.0], [STARTY, ENDY], [3.0, 5.0])
- 
+        STARTY = DIGY + 5.0
+        ENDY = DIGY + 10.0
+        LIGHT_RANGE = Range3D([0.0, 0.0], [STARTY, ENDY], [0.0, 5.0])
 
         for i in range(3):
             name = "extra_light{}".format(i)
@@ -407,12 +404,11 @@ class ArenaModder(BaseModder):
             if not visible:
                 return
 
-            self.model.light_mode[lid] = 3
-            floor_bid = self.model.body_name2id("floor")
-            self.model.light_targetbodyid[lid] = floor_bid
+            #self.model.light_mode[lid] = 3
+            #floor_bid = self.model.body_name2id("floor")
+            #self.model.light_targetbodyid[lid] = floor_bid
             self.model.light_pos[lid] = sample_xyz(LIGHT_RANGE)
             self.model.light_dir[lid] = sample_light_dir()
-            self.model.light_directional[lid] = 1
 
 
     def mod_extras(self, visible=True):
