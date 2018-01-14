@@ -1,6 +1,6 @@
 <extra>
-	  <light name="extra_light0"  diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="extra_light1"  diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
-	  <light name="extra_light2"  diffuse="1.5 1.5 1.5" pos="0 0 3" dir="0 0 -1"/>
+  <light name="extra_light0"  diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3" pos="0 0 3" dir="0 0 -1"/>
+  <light name="extra_light1"  diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3" pos="0 0 3" dir="0 0 -1"/>
+  <light name="extra_light2"  diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3" pos="0 0 3" dir="0 0 -1"/>
 </extra>
 

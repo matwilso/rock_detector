@@ -103,7 +103,7 @@ class ArenaModder(BaseModder):
             self.light_modder.set_pos(name, sample_xyz(LIGHT_RANGE3D))
             self.light_modder.set_dir(name, dir_xyz)
             self.light_modder.set_specular(name, sample_xyz(LIGHT_UNIF))
-            self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
+            #self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
             #self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
             #self.model.light_directional[lid] = sample([0,1]) < 0.01
     
@@ -164,7 +164,8 @@ class ArenaModder(BaseModder):
         # TODO: I might consider changing these to look like rocks instead of 
         # just random shapes.  It just looks weird to me right now.  Ok for now,
         # but it seems a bit off.
-        self._set_visible("side_obj", 20, visible)
+        N = 20
+        self._set_visible("side_obj", N, visible)
         if not visible:
             return
 
@@ -176,7 +177,6 @@ class ArenaModder(BaseModder):
 
         floor_gid = self.model.geom_name2id("floor")
 
-        #import ipdb; ipdb.set_trace()
         left_body_id = self.model.body_name2id("left_wall")
         left_geom_id = self.model.geom_name2id("left_wall")
         right_body_id = self.model.body_name2id("right_wall")
@@ -198,7 +198,7 @@ class ArenaModder(BaseModder):
         right_zrange = 0.02+Range(right_height-Z_JITTER, right_height+Z_JITTER)
         right_range = Range3D(right_xrange, right_yrange, right_zrange)
 
-        for i in range(20):
+        for i in range(N):
             name = "side_obj{}".format(i)
             obj_bid = self.model.body_name2id(name)
             obj_gid = self.model.geom_name2id(name)
@@ -227,7 +227,8 @@ class ArenaModder(BaseModder):
         """mod NASA judges around the perimeter of the arena"""
         # TODO: might want to add regions on the sides of the arena, but these
         # may be covered by the distractors already
-        self._set_visible("judge", 5, visible)
+        N = 5
+        self._set_visible("judge", N, visible)
         if not visible:
             return
 
@@ -236,7 +237,6 @@ class ArenaModder(BaseModder):
         JUDGE_ZRANGE = Range(0.75, 1.0)
         JUDGE_SIZE_RANGE = Range3D(JUDGE_XRANGE, JUDGE_YRANGE, JUDGE_ZRANGE)
 
-        floor_gid = self.model.geom_name2id("floor")
         digwall_bid = self.model.body_name2id("dig_wall")
         digwall_gid = self.model.geom_name2id("dig_wall")
 
@@ -248,7 +248,7 @@ class ArenaModder(BaseModder):
         digwall_zrange = JUDGE_ZRANGE - 0.75
         digwall_range = Range3D(digwall_xrange, digwall_yrange, digwall_zrange)
 
-        for i in range(5):
+        for i in range(N):
             name = "judge{}".format(i)
             judge_bid = self.model.body_name2id(name)
             judge_gid = self.model.geom_name2id(name)
@@ -267,7 +267,8 @@ class ArenaModder(BaseModder):
 
     def mod_extra_robot_parts(self, visible=True):
         """add distractor parts of robots in the lower area of the camera frame"""
-        self._set_visible("robot_part", 3, visible)
+        N = 3
+        self._set_visible("robot_part", N, visible)
         if not visible:
             return 
         # Project difference into camera coordinate frame
@@ -313,7 +314,8 @@ class ArenaModder(BaseModder):
     def mod_extra_arena_structure(self, visible=True):
         """add randomized structure of the arena in the background with 
         pillars and a crossbar"""
-        self._set_visible("arena_structure", 16, visible)
+        N = 16
+        self._set_visible("arena_structure", N, visible)
         if not visible:
             return 
 
@@ -326,7 +328,7 @@ class ArenaModder(BaseModder):
         x_range = np.linspace(ACX - 10.0, ACX + 10.0, 15)
 
         # crossbar
-        name = "arena_structure15"
+        name = "arena_structure{}".format(N-1)
         xbar_bid = self.model.body_name2id(name)
         xbar_gid = self.model.geom_name2id(name)
 
@@ -340,11 +342,10 @@ class ArenaModder(BaseModder):
         ##else:
         ##    self.model.geom_rgba[xbar_gid][-1] = 1.0
 
-        for i in range(15):
+        for i in range(N-1):
             name = "arena_structure{}".format(i)
             arena_structure_bid = self.model.body_name2id(name)
-            arena_structure_gid = self.model.geom_name2id(name)
-
+            arena_structure_gid = self.model.geom_name2id(name) 
             STRUCTURE_RANGE[0] = Range(x_range[i]-0.1, x_range[i]+0.1)
 
             self.model.geom_quat[arena_structure_gid] = jitter_quat(self.start_geom_quat[arena_structure_gid], 0.01)
@@ -360,24 +361,34 @@ class ArenaModder(BaseModder):
                 self.model.geom_rgba[arena_structure_gid][-1] = 1.0
 
 
-    def mod_extra_arena_background(self, visible=True):
-        """add some billboards in the back that are more realistic scenes to not
-        get distracted by"""
-        self._set_visible("billboard", 0, visible)
+    def mod_extra_arena_background(self, visible=True, N=10):
+        """ """
+        self._set_visible("background", N, visible)
         if not visible:
             return
-        
-        STARTY = DIGY + 5.0
-        ENDY = DIGY + 10.0
-        BOARD_SIZE = Range3D([10.0, 20.0], [0.1, 0.1], [10.0, 20.05])
-        BOARD_RANGE = Range3D([0.0, 0.0], [STARTY, ENDY], [0.0, 5.0])
 
-        name = "billboard"
-        board_bid = self.model.body_name2id(name)
-        board_gid = self.model.geom_name2id(name)
+        BACKGROUND_XRANGE = Range(0.1, 0.5)
+        BACKGROUND_YRANGE = Range(0.1, 0.5)
+        BACKGROUND_ZRANGE = Range(0.1, 1.0)
+        BACKGROUND_SIZE_RANGE = Range3D(BACKGROUND_XRANGE, BACKGROUND_YRANGE, BACKGROUND_ZRANGE)
 
-        self.model.body_pos[board_bid] = sample_xyz(BOARD_RANGE)
-        self.model.geom_size[board_gid] = sample_xyz(BOARD_SIZE)
+        digwall_bid = self.model.body_name2id("dig_wall")
+        digwall_gid = self.model.geom_name2id("dig_wall")
+        c = digwall_center = self.model.body_pos[digwall_bid]
+
+        background_range = Range3D([c[0] - 4.0, c[0] + 4.0], [c[1] + 8.0, c[1] + 12.0], [0.0, 5.0])
+
+        for i in range(N):
+            name = "background{}".format(i)
+            background_bid = self.model.body_name2id(name)
+            background_gid = self.model.geom_name2id(name)
+
+            self.model.geom_quat[background_gid] = random_quat()
+            self.model.geom_size[background_gid] = sample_xyz(BACKGROUND_SIZE_RANGE)
+            self.model.geom_type[background_gid] = sample_geom_type()
+
+            self.model.body_pos[background_bid] = sample_xyz(background_range)
+
 
     def mod_extra_lights(self, visible=True):
         """"""
@@ -399,11 +410,11 @@ class ArenaModder(BaseModder):
             self.model.light_dir[lid] = sample_light_dir()
             self.model.light_directional[lid] = 0
 
-            ### 20% chance of being directional light, washing out colors
-            ### (P(at least 1 will be triggered) = 0.5)
-            ##washout = sample([0,1]) < 0.2
-            ##any_washed = any_washed or washout
-            ##self.model.light_directional[lid] = washout
+            ### 3% chance of directional light, washing out colors
+            ### (P(at least 1 will be triggered) ~= 0.1) = 1 - 3root(p)
+            washout = sample([0,1]) < 0.03
+            any_washed = any_washed or washout
+            self.model.light_directional[lid] = washout
 
         if any_washed:
             self.mod_extra_light_discs(visible = visible and sample([0,1]) < 0.9)
@@ -413,7 +424,8 @@ class ArenaModder(BaseModder):
 
     def mod_extra_light_discs(self, visible=True):
         """"""
-        self._set_visible("light_disc", 10, visible)
+        N = 10
+        self._set_visible("light_disc", N, visible)
         if not visible:
             return
 
@@ -425,7 +437,6 @@ class ArenaModder(BaseModder):
         OUTR = 20.0
         INR = 10.0
 
-        floor_gid = self.model.geom_name2id("floor")
         floor_bid = self.model.body_name2id("floor")
         c = self.model.body_pos[floor_bid]
         disc_xrange = Range(c[0] - OUTR, c[0] + OUTR)
@@ -433,7 +444,7 @@ class ArenaModder(BaseModder):
         disc_zrange = Range(-5.0, 10.0)
         disc_range = Range3D(disc_xrange, disc_yrange, disc_zrange)
 
-        for i in range(10):
+        for i in range(N):
             name = "light_disc{}".format(i)
             disc_bid = self.model.body_name2id(name)
             disc_gid = self.model.geom_name2id(name)
@@ -482,12 +493,9 @@ class ArenaModder(BaseModder):
         self.mod_extra_robot_parts(visible)
         self.mod_extra_lights(visible)
         # 10% of the time, hide the other distractor pieces
-        if sample([0,1]) > 0.9:
-            visible = False
         self.mod_extra_judges(visible = visible and sample([0,1]) < 0.9)
         self.mod_extra_arena_structure(visible = visible and sample([0,1]) < 0.9)
-
-        self.mod_extra_arena_background(visible=False) # disabled bcuz it sux 
+        self.mod_extra_arena_background(visible = visible and sample([0,1]) < 0.9)
     
     def mod_walls(self):
         """

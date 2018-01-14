@@ -6,6 +6,7 @@ import argparse
 import itertools
 import yaml
 import numpy as np
+import quaternion
 import tensorflow as tf
 from sim_manager import SimManager
 from utils import display_image, preproc_image, print_rocks, str2bool
@@ -215,6 +216,11 @@ def arena_sampler(sim_manager):
             cam_img, rock_ground_truth = sim_manager.get_data()
             ##camid = sim_manager.arena_modder.cam_modder.get_camid('camera1')
             ##cam_fovy = sim_manager.arena_modder.model.cam_fovy[camid]
+
+            ##cam_angle = quaternion.as_euler_angles(np.quaternion(*sim_manager.arena_modder.model.cam_quat[0]))[1]
+            ##cam_angle *= 180/np.pi
+##          ##  cam_angle += np.pi/2
+            ##display_image(cam_img, "pitch = {}, fovy = {}".format(cam_angle, cam_fovy))
             ##display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
     
             ##for r in rock_ground_truth:

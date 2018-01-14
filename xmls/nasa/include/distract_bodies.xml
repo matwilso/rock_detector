@@ -193,8 +193,39 @@
 		<geom name="light_disc9" type="box" size="0.1 0.1 0.1" material="light_disc9_mat"/>
 	</body>
 
-	<body name="billboard" pos="0.0 0.0 0.0">
-		<geom name="billboard" type="box" size="0.01 10.0 10.0" material="billboard_mat"/>
+	# Bleachers
+	<body name="background0" pos="0.0 0.0 0.0">
+		<geom name="background0" type="box" size="0.1 0.1 0.1" material="background0_mat"/>
+	</body>
+	<body name="background1" pos="0.0 0.0 0.0">
+		<geom name="background1" type="box" size="0.1 0.1 0.1" material="background1_mat"/>
+	</body>
+	<body name="background2" pos="0.0 0.0 0.0">
+		<geom name="background2" type="box" size="0.1 0.1 0.1" material="background2_mat"/>
+	</body>
+	<body name="background3" pos="0.0 0.0 0.0">
+		<geom name="background3" type="box" size="0.1 0.1 0.1" material="background3_mat"/>
+	</body>
+	<body name="background4" pos="0.0 0.0 0.0">
+		<geom name="background4" type="box" size="0.1 0.1 0.1" material="background4_mat"/>
+	</body>
+	<body name="background5" pos="0.0 0.0 0.0">
+		<geom name="background5" type="box" size="0.1 0.1 0.1" material="background5_mat"/>
+	</body>
+	<body name="background6" pos="0.0 0.0 0.0">
+		<geom name="background6" type="box" size="0.1 0.1 0.1" material="background6_mat"/>
+	</body>
+	<body name="background7" pos="0.0 0.0 0.0">
+		<geom name="background7" type="box" size="0.1 0.1 0.1" material="background7_mat"/>
+	</body>
+	<body name="background8" pos="0.0 0.0 0.0">
+		<geom name="background8" type="box" size="0.1 0.1 0.1" material="background8_mat"/>
+	</body>
+	<body name="background9" pos="0.0 0.0 0.0">
+		<geom name="background9" type="box" size="0.1 0.1 0.1" material="background9_mat"/>
+	</body>
+	<body name="background10" pos="0.0 0.0 0.0">
+		<geom name="background10" type="box" size="0.1 0.1 0.1" material="background10_mat"/>
 	</body>
 
 

@@ -121,7 +121,7 @@
 		<texture  name="light_disc4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="light_disc4_mat" shininess="0.03" specular="0.75" texture="light_disc4_tex"></material>
 		<texture  name="light_disc5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
-		<material name="light_disc5_mat" shininess="0.03" specular="0.75" texture="light_disc5_tex"></material>
+		 <material name="light_disc5_mat" shininess="0.03" specular="0.75" texture="light_disc5_tex"></material>
 		<texture  name="light_disc6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="light_disc6_mat" shininess="0.03" specular="0.75" texture="light_disc6_tex"></material>
 		<texture  name="light_disc7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
@@ -131,12 +131,28 @@
 		<texture  name="light_disc9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
 		<material name="light_disc9_mat" shininess="0.03" specular="0.75" texture="light_disc9_tex"></material>
 
-
-		# Billboard to display image
-		<texture  name="billboard_tex" builtin="flat" height="256" width="256" rgb1="1 1 1" type="cube"></texture>
-		<!--fileright="img0.png" fileleft="img1.png" fileup="img2.png" filedown="img3.png" filefront="img4.png" fileback="img5.png"></texture>-->
-		<material name="billboard_mat" shininess="0.03" specular="0.75" texture="billboard_tex"></material>
-
-
+		# Bleachers
+		<texture  name="background0_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background0_mat" shininess="0.03" specular="0.75" texture="background0_tex"></material>
+		<texture  name="background1_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background1_mat" shininess="0.03" specular="0.75" texture="background1_tex"></material>
+		<texture  name="background2_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background2_mat" shininess="0.03" specular="0.75" texture="background2_tex"></material>
+		<texture  name="background3_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background3_mat" shininess="0.03" specular="0.75" texture="background3_tex"></material>
+		<texture  name="background4_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background4_mat" shininess="0.03" specular="0.75" texture="background4_tex"></material>
+		<texture  name="background5_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background5_mat" shininess="0.03" specular="0.75" texture="background5_tex"></material>
+		<texture  name="background6_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background6_mat" shininess="0.03" specular="0.75" texture="background6_tex"></material>
+		<texture  name="background7_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background7_mat" shininess="0.03" specular="0.75" texture="background7_tex"></material>
+		<texture  name="background8_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background8_mat" shininess="0.03" specular="0.75" texture="background8_tex"></material>
+		<texture  name="background9_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background9_mat" shininess="0.03" specular="0.75" texture="background9_tex"></material>
+		<texture  name="background10_tex" builtin="flat" height="32" width="32" rgb1="1 1 1" type="cube"></texture>
+		<material name="background10_mat" shininess="0.03" specular="0.75" texture="background10_tex"></material>
 
 </distract>
