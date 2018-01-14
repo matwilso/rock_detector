@@ -14,8 +14,18 @@ from threading import Thread, Event
 from queue import Queue
 from multiprocessing import set_start_method
 
+# TODO: decrease probability of light flash 
+
+# TODO: try moving the directional light far away and see if you can get it to
+# only affect local area 
+
+# TODO: decrease probability of light flash 
+
 # TODO: add more background randomization, including lighting to better match the 
 # competition images
+
+# TODO: add more lighting in the background, not with light discs, but with pre/post
+# proc on the image (find some scheme to do this)
 
 # TODO: randomize the size of the textures on the rocks so that they have different
 # resolutions
@@ -203,9 +213,9 @@ def arena_sampler(sim_manager):
         else:
             #sim_manager.forward()
             cam_img, rock_ground_truth = sim_manager.get_data()
-            #camid = sim_manager.arena_modder.cam_modder.get_camid('camera1')
-            #cam_fovy = sim_manager.arena_modder.model.cam_fovy[camid]
-            #display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
+            ##camid = sim_manager.arena_modder.cam_modder.get_camid('camera1')
+            ##cam_fovy = sim_manager.arena_modder.model.cam_fovy[camid]
+            ##display_image(cam_img, "{} fovy={}".format(rock_ground_truth, cam_fovy))
     
             ##for r in rock_ground_truth:
             ##    print('{0:.2f}'.format(r), end=', ')

@@ -96,16 +96,16 @@ class ArenaModder(BaseModder):
 
         for i, name in enumerate(self.model.light_names):
             lid = self.model.light_name2id(name)
-            # random sample 50% of any given light being on 
-            self.light_modder.set_active(name, sample([0,1]) > 0.5)
-            self.light_modder.set_active(name, 0)
+            # random sample 80% of any given light being on 
+            self.light_modder.set_active(name, sample([0,1]) < 0.8)
+            #self.light_modder.set_active(name, 0)
             dir_xyz = sample_light_dir()
             self.light_modder.set_pos(name, sample_xyz(LIGHT_RANGE3D))
             self.light_modder.set_dir(name, dir_xyz)
             self.light_modder.set_specular(name, sample_xyz(LIGHT_UNIF))
             self.light_modder.set_diffuse(name, sample_xyz(LIGHT_UNIF))
-            self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
-            #self.model.light_directional[lid] = sample([0,1]) > 0.99
+            #self.light_modder.set_ambient(name, sample_xyz(LIGHT_UNIF))
+            #self.model.light_directional[lid] = sample([0,1]) < 0.01
     
     def mod_camera(self):
         """Randomize pos, direction, and fov of camera"""
@@ -117,18 +117,17 @@ class ArenaModder(BaseModder):
         CAM_RANGE3D = Range3D(CAM_RX, CAM_RY, CAM_RZ)
         CAM_RYAW = Range(-95, -85)
         CAM_RPITCH = Range(65, 90)
-        CAM_RROLL = Range(88, 92) # this might actually be pitch?
+        CAM_RROLL = Range(85, 95) # this might actually be pitch?
         CAM_ANGLE3 = Range3D(CAM_RYAW, CAM_RPITCH, CAM_RROLL)
 
         # "The horizontal field of view is computed automatically given the 
         # window size and the vertical field of view." - Mujoco
         # This range was calculated using: themetalmuncher.github.io/fov-calc/
         # ZED has 110° hfov --> 78° vfov, Logitech C920 has 78° hfov ---> 49° vfov
-        # These were rounded all the way down to 40° and up to 80°, but then 
-        # it starts to look pretty bad in the upper range, I dialed it back a 
-        # Hopefully the range will be enough to make the model resistant to 
-        # these changes.
-        CAM_RFOVY = Range(40, 60)
+        # These were rounded all the way down to 40° and up to 80°. It starts
+        # to look a bit bad in the upper range, but I think it will help 
+        # generalization.
+        CAM_RFOVY = Range(40, 80)
 
         # Actual mods
         self.cam_modder.set_pos('camera1', sample_xyz(CAM_RANGE3D))
@@ -208,12 +207,12 @@ class ArenaModder(BaseModder):
             self.model.geom_type[obj_gid] = sample_geom_type()
 
             # 50% chance of invisible 
-            if sample([0,1]) > 0.5:
+            if sample([0,1]) < 0.5:
                 self.model.geom_rgba[obj_gid][-1] = 0.0
             else:
                 self.model.geom_rgba[obj_gid][-1] = 1.0
             ## 50% chance of same color as floor and rocks 
-            if sample([0,1]) > 0.5:
+            if sample([0,1]) < 0.5:
                 self.model.geom_matid[obj_gid] = self.model.geom_matid[floor_gid]
             else:
                 self.model.geom_matid[obj_gid] = self.start_matid[obj_gid]
@@ -264,7 +263,7 @@ class ArenaModder(BaseModder):
             self.model.body_pos[judge_bid] = sample_xyz(digwall_range)
 
             # 50% chance of invisible 
-            self.model.geom_rgba[judge_gid][-1] = sample([0,1]) > 0.5
+            self.model.geom_rgba[judge_gid][-1] = sample([0,1]) < 0.5
 
     def mod_extra_robot_parts(self, visible=True):
         """add distractor parts of robots in the lower area of the camera frame"""
@@ -305,7 +304,7 @@ class ArenaModder(BaseModder):
             self.model.geom_type[upper_gid] = sample_geom_type()
 
             # 50% of the time, choose random angle instead reasonable angle
-            if sample([0,1]) > 0.5:
+            if sample([0,1]) < 0.5:
                 self.model.geom_quat[upper_gid] = sample_quat(upper_angle)
             else:
                 self.model.geom_quat[upper_gid] = random_quat()
@@ -335,11 +334,11 @@ class ArenaModder(BaseModder):
         self.model.geom_size[xbar_gid] = sample_xyz(XBAR_SIZE)
         self.model.body_pos[xbar_bid] = sample_xyz(XBAR_RANGE)
 
-        # 10% chance of invisible 
-        if sample([0,1]) > 0.9:
-            self.model.geom_rgba[xbar_gid][-1] = 0.0
-        else:
-            self.model.geom_rgba[xbar_gid][-1] = 1.0
+        ### 10% chance of invisible 
+        ##if sample([0,1]) < 0.1:
+        ##    self.model.geom_rgba[xbar_gid][-1] = 0.0
+        ##else:
+        ##    self.model.geom_rgba[xbar_gid][-1] = 1.0
 
         for i in range(15):
             name = "arena_structure{}".format(i)
@@ -355,7 +354,7 @@ class ArenaModder(BaseModder):
             self.model.geom_matid[arena_structure_gid] = self.model.geom_matid[xbar_gid]
 
             # 10% chance of invisible 
-            if sample([0,1]) > 0.9:
+            if sample([0,1]) < 0.1:
                 self.model.geom_rgba[arena_structure_gid][-1] = 0.0
             else:
                 self.model.geom_rgba[arena_structure_gid][-1] = 1.0
@@ -387,6 +386,7 @@ class ArenaModder(BaseModder):
         STARTY = DIGY + 3.0
         ENDY = DIGY + 5.0
         LIGHT_RANGE = Range3D([ACX - 2.0, ACX + 2.0], [STARTY, ENDY], [3.0, 5.0])
+        any_washed = False
 
         for i in range(3):
             name = "extra_light{}".format(i)
@@ -399,29 +399,38 @@ class ArenaModder(BaseModder):
             self.model.light_dir[lid] = sample_light_dir()
             self.model.light_directional[lid] = 0
 
-            # 20% chance of being directional light, washing out colors
-            # (P(at least 1 will be triggered) = 0.5)
-            self.model.light_directional[lid] = sample([0,1]) > 0.8
+            ### 20% chance of being directional light, washing out colors
+            ### (P(at least 1 will be triggered) = 0.5)
+            ##washout = sample([0,1]) < 0.2
+            ##any_washed = any_washed or washout
+            ##self.model.light_directional[lid] = washout
+
+        if any_washed:
+            self.mod_extra_light_discs(visible = visible and sample([0,1]) < 0.9)
+        else:
+            self.mod_extra_light_discs(visible=False)
+
 
     def mod_extra_light_discs(self, visible=True):
         """"""
-        visible = True
         self._set_visible("light_disc", 10, visible)
         if not visible:
             return
 
         Z_JITTER = 0.05
-        DISC_XRANGE = Range(0.1, 5.0)
-        DISC_YRANGE = Range(0.1, 5.0)
-        DISC_ZRANGE = Range(0.1, 5.0)
+        DISC_XRANGE = Range(0.1, 4.0)
+        DISC_YRANGE = Range(0.1, 4.0)
+        DISC_ZRANGE = Range(0.1, 4.0)
         DISC_SIZE_RANGE = Range3D(DISC_XRANGE, DISC_YRANGE, DISC_ZRANGE)
+        OUTR = 20.0
+        INR = 10.0
 
         floor_gid = self.model.geom_name2id("floor")
         floor_bid = self.model.body_name2id("floor")
         c = self.model.body_pos[floor_bid]
-        disc_xrange = Range(c[0] - 20.0, c[0] + 20.0)
-        disc_yrange = Range(c[1], c[1] + 20.0)
-        disc_zrange = Range(0.0, 10.0)
+        disc_xrange = Range(c[0] - OUTR, c[0] + OUTR)
+        disc_yrange = Range(c[1], c[1] + OUTR)
+        disc_zrange = Range(-5.0, 10.0)
         disc_range = Range3D(disc_xrange, disc_yrange, disc_zrange)
 
         for i in range(10):
@@ -434,23 +443,24 @@ class ArenaModder(BaseModder):
             self.model.geom_size[disc_gid] = sample_xyz(DISC_SIZE_RANGE)
             self.model.geom_type[disc_gid] = sample_geom_type()
 
+            # keep trying to place the disc until it lands outside of blocking stuff
+            # (they will land in a u shape, because they are sampled with a 
+            # constrain to not land in the middle)
             while True:
                 xyz = sample_xyz(disc_range)
 
-                if ((xyz[0] > (c[0] - 10.0) and xyz[0] < (c[0] + 10.0)) and
-                   (xyz[1] > (c[1] - 10.0) and xyz[1] < (c[1] + 10.0))):
+                if ((xyz[0] > (c[0] - INR) and xyz[0] < (c[0] + INR)) and
+                   (xyz[1] > (c[1] - INR) and xyz[1] < (c[1] + INR))):
                     continue
                 else:
                     self.model.geom_pos[disc_gid] = xyz
                     break
 
-            #self.model.geom_rgba[disc_gid][-1] = 0.0
-
-            ### 50% chance of invisible 
-            ##if sample([0,1]) > 0.5:
-            ##    self.model.geom_rgba[disc_gid][-1] = 0.0
-            ##else:
-            ##    self.model.geom_rgba[disc_gid][-1] = 1.0
+            # 50% chance of invisible 
+            if sample([0,1]) < 0.5:
+                self.model.geom_rgba[disc_gid][-1] = 0.0
+            else:
+                self.model.geom_rgba[disc_gid][-1] = 1.0
 
     def mod_extras(self, visible=True):
         """
@@ -470,14 +480,14 @@ class ArenaModder(BaseModder):
         """
         self.mod_extra_distractors(visible)
         self.mod_extra_robot_parts(visible)
-        self.mod_extra_lights(visible=True)
+        self.mod_extra_lights(visible)
         # 10% of the time, hide the other distractor pieces
         if sample([0,1]) > 0.9:
             visible = False
-        self.mod_extra_judges(visible)
-        self.mod_extra_arena_structure(visible)
+        self.mod_extra_judges(visible = visible and sample([0,1]) < 0.9)
+        self.mod_extra_arena_structure(visible = visible and sample([0,1]) < 0.9)
+
         self.mod_extra_arena_background(visible=False) # disabled bcuz it sux 
-        self.mod_extra_light_discs(visible)
     
     def mod_walls(self):
         """
@@ -500,7 +510,7 @@ class ArenaModder(BaseModder):
     
             self.model.body_pos[body_id] = self.start_body_pos[body_id] + sample_xyz(jitter3D)
             self.model.body_quat[body_id] = jitter_quat(self.start_body_quat[body_id], 0.005)
-            if sample([0,1]) > 0.95:
+            if sample([0,1]) < 0.05:
                 self.model.body_pos[body_id][2] = -2.0
     
     
