@@ -15,7 +15,7 @@ from threading import Thread, Event
 from queue import Queue
 from multiprocessing import set_start_method
 
-# TODO: decrease probability of light flash 
+# TODO: write code to determine if rock is in frame or not
 
 # TODO: try moving the directional light far away and see if you can get it to
 # only affect local area 
@@ -88,7 +88,7 @@ def parse_command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--logdir', type=str,
-        default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),'tensorflow/rock_detector/'),
+        default=os.path.expanduser('~')+'/training_logs/tensorflow/rock_detector/',
         help='Directory to log data for TensorBoard to')
     parser.add_argument(
         '--log_every', type=int, default=100,
@@ -505,6 +505,7 @@ if __name__ == '__main__':
         # Initialize all variables
         init = tf.global_variables_initializer()
         sess.run(init)
+        print('Model started from random weights')
 
     if FLAGS.num_sims > 1:
         set_start_method('spawn')
