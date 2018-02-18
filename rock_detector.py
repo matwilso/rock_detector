@@ -15,6 +15,12 @@ from threading import Thread, Event
 from queue import Queue
 from multiprocessing import set_start_method
 
+# TODO: arena modder ground truth TODOs
+
+# TODO: rewrite the loss function to not use euclidean distance, but instead some
+# classifier type loss (sigmoid output, vs. base label of 0 or 1).  need to look
+# up exactly what loss this would be
+
 # TODO: write code to determine if rock is in frame or not
 
 # TODO: try moving the directional light far away and see if you can get it to
@@ -135,6 +141,9 @@ def parse_command_line():
         '--eval', type=str2bool, default=True,
         help='Evaluate on test images')
     parser.add_argument(
+        '--architecture', type=str, default='resnet50', 
+        help='Conv Net architecture to use')
+    parser.add_argument(
         '--freeze_conv', type=str2bool, default=False,
         help='Evaluate on test images')
     parser.add_argument(
@@ -180,9 +189,9 @@ def evaluate():
     test_writer.add_summary(summary)
 
     # Add plots
-    matplotx, matploty, matploth = summary_plots(test_batch_truths, predictions)
-    psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
-    test_writer.add_summary(psumm)
+    ##matplotx, matploty, matploth = summary_plots(test_batch_truths, predictions)
+    ##psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
+    ##test_writer.add_summary(psumm)
 
     ##print('practice')
     ##print_rocks(predictions[0])
@@ -347,14 +356,14 @@ def train_loop():
         ground_truths = np.stack(batch_ground_truths)
 
         if i % FLAGS.log_every != 0:
-            _, _, curr_loss, pred_output = sess.run([check_op, train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
+            _, _, curr_loss, pred_output = sess.run([train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
             _, curr_loss, pred_output, tsumm  = sess.run([train_op, mean_loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
             train_writer.add_summary(tsumm, i)
-            matplotx, matploty, matploth = summary_plots(ground_truths, pred_output)
-            psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
-            train_writer.add_summary(psumm, i)
+            #$matplotx, matploty, matploth = summary_plots(ground_truths, pred_output)
+            #psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
+            #train_writer.add_summary(psumm, i)
 
         if i % FLAGS.save_every == 0:
             save_path = saver.save(sess, FLAGS.save_path)
@@ -440,25 +449,47 @@ if __name__ == '__main__':
 
 
     # NEURAL NETWORK DEFINITION
-    # (tf.keras VGG16, random weights not trained on imagenet, custom fc head layers)
-    conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
-    keras_vgg16 = tf.keras.models.Sequential()
-    keras_vgg16.add(conv_section)
-    keras_vgg16.add(tf.keras.layers.Flatten())
-    keras_vgg16.add(tf.keras.layers.Dense(256, activation='relu', input_shape=(None, 512*7*7), name='fc1'))
-    keras_vgg16.add(tf.keras.layers.Dense(64, activation='relu', name='fc2'))
-    keras_vgg16.add(tf.keras.layers.Dense(9, activation='linear', name='predictions'))
-    # Print summary on architecture
-    keras_vgg16.summary()
-    #keras_vgg16.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-4),
-    #                      loss='mean_squared_error',
-    #                      metric='accuracy')
+    # (random weights, not trained on ImageNet)
+
+    if FLAGS.architecture == 'vgg16':
+        # just a reshape
+        conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
+        conv_section.layers.pop()
+        reshape = tf.keras.layers.Reshape((392, 256))
+        sigmoid = tf.keras.layers.Activation('sigmoid')
+        conv_out = sigmoid(reshape(conv_section.layers[-1].output))
+        keras_vgg16 = tf.keras.models.Model(conv_section.input, conv_out)
+
+        # custom fc head layers
+        ##keras_vgg16 = tf.keras.models.Sequential()
+        ##keras_vgg16.add(conv_section)
+        ##keras_vgg16.add(tf.keras.layers.Flatten())
+        ##keras_vgg16.add(tf.keras.layers.Dense(256, activation='relu', input_shape=(None, 512*7*7), name='fc1'))
+        ##keras_vgg16.add(tf.keras.layers.Dense(64, activation='relu', name='fc2'))
+        ##keras_vgg16.add(tf.keras.layers.Dense(9, activation='linear', name='predictions'))
+        # Print summary on architecture
+        keras_vgg16.summary()
+        conv_net = keras_vgg16
+
+    elif FLAGS.architecture == 'resnet50':
+        conv_section = tf.keras.applications.ResNet50(include_top=False, weights=None, input_shape=(224,224,3))
+        conv_section.layers.pop()
+        reshape = tf.keras.layers.Flatten()
+        sigmoid = tf.keras.layers.Activation('sigmoid')
+        conv_out = sigmoid(reshape(conv_section.layers[-1].output))
+        resnet50 = tf.keras.models.Model(conv_section.input, conv_out)
+        # Print summary on architecture
+        resnet50.summary()
+        conv_net = resnet50
+
+    # Capture output shape of net for generating ground truth
+    output_shape = conv_net.output_shape[-1]
 
     # Input image (224, 224, 3)
-    img_input = keras_vgg16.input
-    # Output vector of rock xy+height (9,)
-    pred_tf = keras_vgg16.output
-    real_output = tf.placeholder(tf.float32, shape=(None, 9), name='real_output')
+    img_input = conv_net.input
+    # Output vector of rock costmap
+    pred_tf = conv_net.output
+    real_output = tf.placeholder(tf.float32, shape=(None, output_shape), name='real_output')
     
     # loss (sum of squares)
     loss = tf.reduce_sum(tf.square(real_output - pred_tf)) 
@@ -473,24 +504,24 @@ if __name__ == '__main__':
     else:
         train_op = optimizer.minimize(loss)
 
-    check_op = tf.add_check_numerics_ops()
+    #check_op = tf.add_check_numerics_ops()
 
     # SUMMARY STUFF
-    x_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='x_plot')
-    y_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='y_plot')
-    h_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='h_plot')
+    ##x_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='x_plot')
+    ##y_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='y_plot')
+    ##h_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='h_plot')
 
     input_summary = tf.summary.image('input', img_input, 10)
     mean_loss_summary = tf.summary.scalar('mean_loss', mean_loss)
     loss_hist = tf.summary.histogram('loss_histogram', loss)
-
     train_summary = tf.summary.merge([input_summary, mean_loss_summary, loss_hist])
-    x_summary_plot = tf.summary.image('plot_x', x_plot, 1)
-    y_summary_plot = tf.summary.image('plot_y', y_plot, 1)
-    h_summary_plot = tf.summary.image('plot_h', h_plot, 1)
-    plot_summary = tf.summary.merge([x_summary_plot, y_summary_plot, h_summary_plot])
-    sess = tf.Session()
 
+    ##x_summary_plot = tf.summary.image('plot_x', x_plot, 1)
+    ##y_summary_plot = tf.summary.image('plot_y', y_plot, 1)
+    ##h_summary_plot = tf.summary.image('plot_h', h_plot, 1)
+    ##plot_summary = tf.summary.merge([x_summary_plot, y_summary_plot, h_summary_plot])
+
+    sess = tf.Session()
     train_writer = tf.summary.FileWriter(FLAGS.logdir + '/train', sess.graph)
     test_writer = tf.summary.FileWriter(FLAGS.logdir + '/test')
     

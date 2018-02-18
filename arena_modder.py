@@ -697,15 +697,14 @@ class ArenaModder(BaseModder):
         """
         cam_pos = self.model.cam_pos[0]
 
-        #line_pos = self.floor_offset + np.array([0.0, 0.75, 0.0])
-        #self.viewer.add_marker(pos=line_pos)
-
-        ##r0_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock0')]
-        ##r1_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock1')]
-        ##r2_pos = self.floor_offset + self.model.body_pos[self.model.body_name2id('rock2')]
-        ##r0_diff = r0_pos - cam_pos
-        ##r1_diff = r1_pos - cam_pos
-        ##r2_diff = r2_pos - cam_pos
+        # TODO: probably get rid of rock mod cache
+        # TODO: compute positions of rocks in camera frame.
+        # TODO: lay down the grid w.r.t. camera and have some way to check whether
+        # there is a rock there.  probably by computing a bounding box around each
+        # rock and just filling in the squares with a 1 depending on if a rock is
+        # there
+        # rock_map = np.zeros(grid_shape)
+        # rock_map[top:bottom, left:right] = 1.0
     
         ground_truth = np.zeros(9, dtype=np.float32)
         for i, slot in enumerate(self.rock_mod_cache):
