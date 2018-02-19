@@ -80,13 +80,14 @@ class SimManager():
         return self.arena_modder.get_ground_truth()
 
     def get_data(self):
-        if self.num_sims > 1:
+        if self.gum_sims > 1:
             return self._get_pool_data()
         else:
             self.arena_modder.randomize()
             gt = self._get_ground_truth()
             self.sim.forward()
             cam = self._get_cam_frame()
+
             return cam, gt
 
 

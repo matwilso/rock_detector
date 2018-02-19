@@ -50,7 +50,7 @@ class ArenaModder(BaseModder):
         self.start_body_quat = self.model.body_quat.copy()
         self.start_matid = self.model.geom_matid.copy()
         self.floor_offset = self.model.body_pos[self.model.body_name2id('floor')]
-        self.rock_mod_cache = None
+        self.rock_names_and_heights = None
 
         self.tex_modder = TextureModder(self.sim)
         self.cam_modder = CameraModder(self.sim)
@@ -538,20 +538,13 @@ class ArenaModder(BaseModder):
         DIRT_ANGLE3 = Range3D(DIRT_RYAW, DIRT_RPITCH, DIRT_RROLL)
         dirt_bid = self.model.body_name2id("dirt")
         dirt_gid = self.model.geom_name2id("dirt")
-        dirt_mid = self.model.geom_dataid[dirt_gid]
     
         # randomize position and yaw of dirt
         self.model.body_pos[dirt_bid] = self.start_body_pos[dirt_bid]  + sample_xyz(DIRT_RANGE3D)
         self.model.geom_quat[dirt_gid] = sample_quat(DIRT_ANGLE3)
         
-        vert_adr = self.model.mesh_vertadr[dirt_mid]
-        vert_num = self.model.mesh_vertnum[dirt_mid]
-        mesh_verts = self.model.mesh_vert[vert_adr : vert_adr+vert_num]
-    
-        rot_quat = self.model.geom_quat[dirt_gid]
-        rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
-    
-        mesh_abs_pos = self.floor_offset + self.model.body_pos[dirt_bid] + rots
+        abs_mesh_verts = self._get_abs_verts(dirt_gid)
+        mesh_abs_pos = self.floor_offset + self.model.body_pos[dirt_bid] + abs_mesh_verts
     
         #xy_indexes = mesh_abs_pos[:, 0:2]
         #z_heights = mesh_abs_pos[:, 2]
@@ -594,7 +587,19 @@ class ArenaModder(BaseModder):
         dirt_height_xy = local_mean_height
         #dirt_height_xy = always_zero
         return dirt_height_xy
-    
+
+    def _get_abs_verts(self, geom_id):
+        """Helper function to get stl mesh vertices of geom, based on geom_id"""
+        mesh_id = self.model.geom_dataid[geom_id]
+        vert_adr = self.model.mesh_vertadr[mesh_id]
+        vert_num = self.model.mesh_vertnum[mesh_id]
+        # get unrotated mesh vertices
+        mesh_verts = self.model.mesh_vert[vert_adr : vert_adr+vert_num]
+        # rotate them based on geom_quat to get the orientation used for rendering
+        geom_quat = self.model.geom_quat[geom_id]
+        abs_mesh_verts = quaternion.rotate_vectors(np.quaternion(*geom_quat).normalized(), mesh_verts)
+
+        return abs_mesh_verts
     
     def mod_rocks(self):
         """
@@ -626,50 +631,42 @@ class ArenaModder(BaseModder):
         ROCK_RANGES = [LEFT_ROCK_RANGE, MID_ROCK_RANGE, RIGHT_ROCK_RANGE]
 
         # actual mods
-        rock_body_ids = {}
-        rock_geom_ids = {}
-        rock_mesh_ids = {}
+        rock_body_ids = {} # save these to shuffle later
         max_height_idxs = {} 
-        rot_cache = {}
+        abs_mesh_verts = {} # save absolute mesh vertices (rotated based on geom quat)
         #max_height_xys = {}
     
         dirt_height_xy = self.mod_dirt()
     
         for name in self.model.geom_names:
-            if name[:4] != "rock":
+            if name[:4] != "rock": 
                 continue 
             
             geom_id = self.model.geom_name2id(name)
             body_id = self.model.body_name2id(name)
-            mesh_id = self.model.geom_dataid[geom_id]
-            rock_geom_ids[name] = geom_id
             rock_body_ids[name] = body_id
-            rock_mesh_ids[name] = mesh_id
     
             # Rotate the rock and get the z value of the highest point in the 
             # rotated rock mesh
             rot_quat = random_quat()
-            vert_adr = self.model.mesh_vertadr[mesh_id]
-            vert_num = self.model.mesh_vertnum[mesh_id]
-            mesh_verts = self.model.mesh_vert[vert_adr : vert_adr+vert_num]
-            rots = quaternion.rotate_vectors(np.quaternion(*rot_quat).normalized(), mesh_verts)
             self.model.geom_quat[geom_id] = rot_quat  
-            max_height_idx = np.argmax(rots[:,2])
+            abs_mesh_vert = self._get_abs_verts(geom_id)
+            max_height_idx = np.argmax(abs_mesh_vert[:,2])
             max_height_idxs[name] =  max_height_idx
-            rot_cache[name] = rots
+            abs_mesh_verts[name] = abs_mesh_vert
     
     
         # Shuffle the positions of the rocks (l or m or r)
         shuffle_names = list(rock_body_ids.keys())
         random.shuffle(shuffle_names)
-        self.rock_mod_cache = [] 
+        self.rock_names_and_heights = [] 
         for i in range(len(shuffle_names)):
             name = shuffle_names[i]
-            rots = rot_cache[name]
+            abs_mesh_vert = abs_mesh_verts[name]
             self.model.body_pos[rock_body_ids[name]] = np.array(sample_xyz(ROCK_RANGES[i]))
     
             max_height_idx = max_height_idxs[name]
-            xyz_for_max_z = rots[max_height_idx]
+            xyz_for_max_z = abs_mesh_vert[max_height_idx]
     
             # xyz coords in global frame
             global_xyz = self.floor_offset + xyz_for_max_z + self.model.body_pos[rock_body_ids[name]]
@@ -684,55 +681,59 @@ class ArenaModder(BaseModder):
             #print(name, dirt_z)
     
             z_height = max_height - dirt_z
-            self.rock_mod_cache.append((name, z_height))
+            self.rock_names_and_heights.append((name, z_height))
 
     def get_ground_truth(self):
         """
-        self.rock_mod_cache set from self.mod_rocks
+        must call self.mod_rocks first, to set self.rock_names_and_heights
 
-        Return 1d numpy array of 9 elements for positions of all 3 rocks including:
-            - rock x dist from cam
-            - rock y dist from cam
-            - rock z height from arena floor
+        Params:
+            grid_shape (tuple): shape of output matrix grid
+
+        Returns matrix of grid_shape representing if there is a rock at in each place
         """
         cam_pos = self.model.cam_pos[0]
+        
+        # ground truth rock map
+        grid_shape = (392, 256)
+        rock_map = np.zeros(grid_shape, dtype=np.bool)
 
-        # TODO: probably get rid of rock mod cache
-        # TODO: compute positions of rocks in camera frame.
-        # TODO: lay down the grid w.r.t. camera and have some way to check whether
-        # there is a rock there.  probably by computing a bounding box around each
-        # rock and just filling in the squares with a 1 depending on if a rock is
-        # there
-        # rock_map = np.zeros(grid_shape)
-        # rock_map[top:bottom, left:right] = 1.0
-    
-        ground_truth = np.zeros(9, dtype=np.float32)
-        for i, slot in enumerate(self.rock_mod_cache):
-            name = slot[0]
-            z_height = slot[1]
-    
-            pos = self.floor_offset + self.model.body_pos[self.model.body_name2id(name)]
+        for i in range(3):
+            name = 'rock{}'.format(i)
+            rock_bid = self.model.body_name2id(name)
+            rock_gid = self.model.geom_name2id(name) 
+            abs_mesh_verts = self._get_abs_verts(rock_gid)
+
+            # centroid pos and diff
+            pos = self.floor_offset + self.model.body_pos[rock_bid] 
             diff = pos - cam_pos
 
             # Project difference into camera coordinate frame
-            cam_angle = quaternion.as_euler_angles(np.quaternion(*self.model.cam_quat[0]))[0]
-            cam_angle += np.pi/2
-            in_cam_frame = np.zeros_like(diff)
-            x = diff[1]
-            y = -diff[0]
-            in_cam_frame[0] = x * np.cos(cam_angle) + y * np.sin(cam_angle)
-            in_cam_frame[1] = -x * np.sin(cam_angle) + y * np.cos(cam_angle)
-            in_cam_frame[2] = z_height
-            # simple check that change of frame is mathematically valid
-            assert(np.isclose(np.sum(np.square(diff[:2])), np.sum(np.square(in_cam_frame[:2]))))
-            # swap positions to match ROS standard coordinates
-            ground_truth[3*i+0] = in_cam_frame[0]
-            ground_truth[3*i+1] = in_cam_frame[1]
-            ground_truth[3*i+2] = in_cam_frame[2]
-            text = "{0} x: {1:.2f} y: {2:.2f} height:{3:.2f}".format(name, ground_truth[3*i+0], ground_truth[3*i+1], z_height)
-            ##text = "x: {0:.2f} y: {1:.2f} height:{2:.2f}".format(ground_truth[3*i+0], ground_truth[3*i+1], z_height)
-            ##text = "height:{0:.2f}".format(z_height)
-            if self.visualize:
-                self.viewer.add_marker(pos=pos, label=text, rgba=np.zeros(4))
+            cam_yaw = quaternion.as_euler_angles(np.quaternion(*self.model.cam_quat[0]))[0]
+            cam_quat_only_yaw = quaternion.from_euler_angles(0, 0, np.pi/2+cam_yaw).normalized()
+            cam_frame_mesh_verts = quaternion.rotate_vectors(cam_quat_only_yaw, abs_mesh_verts)
+            # TODO: check for heights and only set it if it above the floor
+            mins = (np.min(diff+cam_frame_mesh_verts, axis=0) / 0.015).astype(int)
+            maxs = (np.max(diff+cam_frame_mesh_verts, axis=0) / 0.015).astype(int)
 
-        return ground_truth
+            # to convert to ROS coords: x_r = y_m, y_r = -x_m
+            x_low, x_high = mins[1], maxs[1]
+            y_low, y_high = -mins[0], -maxs[0]
+
+            bottom = x_low - 393
+            top = x_high - 393 
+            right = y_low + 128
+            left = y_high + 128
+
+            # if the rock is outside the map to side, do nothing 
+            #(> 256 is already handled implicitly)
+            if left < 0 or right < 0:
+                pass
+            else:
+                rock_map[bottom:top, left:right] = 1
+
+
+            #self.viewer.add_marker(pos=pos+mins, label="mins", size=np.array([0.01, 0.01, 0.01]))
+            #self.viewer.add_marker(pos=pos+maxs, label="maxs", size=np.array([0.01, 0.01, 0.01]))
+
+        return rock_map[:, ::-1] # flip y because it y=-1.89 should be in lower indices

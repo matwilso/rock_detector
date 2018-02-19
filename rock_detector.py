@@ -356,7 +356,7 @@ def train_loop():
         ground_truths = np.stack(batch_ground_truths)
 
         if i % FLAGS.log_every != 0:
-            _, _, curr_loss, pred_output = sess.run([train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
+            _, curr_loss, pred_output = sess.run([train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
             _, curr_loss, pred_output, tsumm  = sess.run([train_op, mean_loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
@@ -414,7 +414,14 @@ def just_visualize():
     sampler = arena_sampler(sim_manager)
     for i in itertools.count(1):
         sim_manager.forward()
-        next(sampler)
+        (cam_img, rock_ground_truth) = next(sampler)
+        cam_img = ((cam_img * 255) + 127.5).astype(np.uint8)
+        plt.subplot(121)
+        plt.imshow(rock_ground_truth[::-1,:], cmap='hot', interpolation='nearest')
+        plt.subplot(122)
+        plt.imshow(cam_img)
+        plt.savefig('map_comp.png')
+        plt.show()
 
         if i % FLAGS.super_batch == 0:
             sim_manager.randrocks()
@@ -456,17 +463,8 @@ if __name__ == '__main__':
         conv_section = tf.keras.applications.VGG16(include_top=False, weights=None, input_shape=(224,224,3))
         conv_section.layers.pop()
         reshape = tf.keras.layers.Reshape((392, 256))
-        sigmoid = tf.keras.layers.Activation('sigmoid')
-        conv_out = sigmoid(reshape(conv_section.layers[-1].output))
+        conv_out = reshape(conv_section.layers[-1].output)
         keras_vgg16 = tf.keras.models.Model(conv_section.input, conv_out)
-
-        # custom fc head layers
-        ##keras_vgg16 = tf.keras.models.Sequential()
-        ##keras_vgg16.add(conv_section)
-        ##keras_vgg16.add(tf.keras.layers.Flatten())
-        ##keras_vgg16.add(tf.keras.layers.Dense(256, activation='relu', input_shape=(None, 512*7*7), name='fc1'))
-        ##keras_vgg16.add(tf.keras.layers.Dense(64, activation='relu', name='fc2'))
-        ##keras_vgg16.add(tf.keras.layers.Dense(9, activation='linear', name='predictions'))
         # Print summary on architecture
         keras_vgg16.summary()
         conv_net = keras_vgg16
@@ -474,26 +472,25 @@ if __name__ == '__main__':
     elif FLAGS.architecture == 'resnet50':
         conv_section = tf.keras.applications.ResNet50(include_top=False, weights=None, input_shape=(224,224,3))
         conv_section.layers.pop()
-        reshape = tf.keras.layers.Flatten()
-        sigmoid = tf.keras.layers.Activation('sigmoid')
-        conv_out = sigmoid(reshape(conv_section.layers[-1].output))
+        reshape = tf.keras.layers.Reshape((392, 256))
+        conv_out = reshape(conv_section.layers[-1].output)
         resnet50 = tf.keras.models.Model(conv_section.input, conv_out)
         # Print summary on architecture
         resnet50.summary()
         conv_net = resnet50
 
     # Capture output shape of net for generating ground truth
-    output_shape = conv_net.output_shape[-1]
+    grid_shape = (392, 256) # hard-coded shape of conv-net output 
 
     # Input image (224, 224, 3)
     img_input = conv_net.input
     # Output vector of rock costmap
     pred_tf = conv_net.output
-    real_output = tf.placeholder(tf.float32, shape=(None, output_shape), name='real_output')
+    real_output = tf.placeholder(tf.float32, shape=(None,)+grid_shape, name='real_output')
     
     # loss (sum of squares)
-    loss = tf.reduce_sum(tf.square(real_output - pred_tf)) 
-    mean_loss = tf.reduce_mean(tf.reduce_sum(tf.square(real_output - pred_tf), 1))
+    loss = tf.losses.sigmoid_cross_entropy(real_output, pred_tf)
+    mean_loss = tf.reduce_mean(tf.losses.sigmoid_cross_entropy(real_output, pred_tf))
     # optimizer
     optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate) # 1e-4 suggested from dom rand paper
 
