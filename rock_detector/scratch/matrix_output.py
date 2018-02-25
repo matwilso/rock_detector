@@ -39,4 +39,6 @@ reshape = tf.keras.layers.Reshape((392, 256))
 conv_out = sigmoid(reshape(conv_section.layers[-1].output))
 vgg16 = tf.keras.models.Model(conv_section.input, conv_out)
 vgg16.summary()
+import ipdb; ipdb.set_trace()
+
 

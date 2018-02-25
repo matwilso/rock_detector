@@ -61,8 +61,8 @@ def preproc_image(img):
     return down_sample 
 
 def display_image(cam_img, label):
-    practice_img = preproc_image(plt.imread("assets/practice.jpg"))
-    round1_img = preproc_image(plt.imread("assets/round1.jpg"))
+    practice_img = preproc_image(plt.imread("../assets/practice.jpg"))
+    round1_img = preproc_image(plt.imread("../assets/round1.jpg"))
     fig = plt.figure()
 
     subp = fig.add_subplot(1,3,1)

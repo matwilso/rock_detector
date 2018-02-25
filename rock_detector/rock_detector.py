@@ -15,12 +15,6 @@ from threading import Thread, Event
 from queue import Queue
 from multiprocessing import set_start_method
 
-# TODO: arena modder ground truth TODOs
-
-# TODO: rewrite the loss function to not use euclidean distance, but instead some
-# classifier type loss (sigmoid output, vs. base label of 0 or 1).  need to look
-# up exactly what loss this would be
-
 # TODO: write code to determine if rock is in frame or not
 
 # TODO: try moving the directional light far away and see if you can get it to
@@ -129,11 +123,8 @@ def parse_command_line():
     parser.add_argument(
         '--load_path', type=str, default='weights/model.ckpt',
         help='File to load weights from')
-    ##parser.add_argument(
-    ##    '--dtype', type=str, default='cpu',
-    ##    help='cpu or gpu')
     parser.add_argument(
-        '--blender_path', type=str, default='blender', help='Path to blender executable')
+        '--blender_path', type=str, default='blender', help='Path to blender executable'    )
     parser.add_argument(
         '--clean_log', type=str2bool, default=False,
         help='Delete previous tensorboard logs and start over')
@@ -161,8 +152,8 @@ def parse_command_line():
 
 def evaluate():
     """Evaluate the accuracy of the model on real images to make sure it generalizes"""
-    data = yaml.load(open('assets/real_data.yaml', 'r'))
-    data_path = 'assets/data/'
+    data = yaml.load(open('../assets/real_data.yaml', 'r'))
+    data_path = '../assets/data/'
 
     test_imgs = []
     test_truths = []
@@ -189,9 +180,9 @@ def evaluate():
     test_writer.add_summary(summary)
 
     # Add plots
-    ##matplotx, matploty, matploth = summary_plots(test_batch_truths, predictions)
-    ##psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
-    ##test_writer.add_summary(psumm)
+    matplot_gp = summary_plots(test_batch_truths, predictions)
+    psumm = sess.run([plot_summary], {groundpred_plot: matplot_gp})[0]
+    test_writer.add_summary(psumm)
 
     ##print('practice')
     ##print_rocks(predictions[0])
@@ -266,69 +257,21 @@ def generate_data():
 def summary_plots(grounds, preds):
     """
     Create plots showing both ground truths and predictions of rock
-    positions. Doing this natively (with Tensorflow tools) is currently 
+    positions. Doing this natively w/ Tensorflow tools is currently 
     impossible, so I hacked together this matplotlib plotting
     """
-    ground_summary_hist.append(grounds[0])
-    pred_summary_hist.append(preds[0])
-    with open(FLAGS.logdir+'summary.pkl', 'wb') as f:
-        pickle.dump((ground_summary_hist, pred_summary_hist), f)
-
-    glxs = [g[0] for g in ground_summary_hist]
-    glys = [g[1] for g in ground_summary_hist]
-    glhs = [g[2] for g in ground_summary_hist]
-    gmxs = [g[3] for g in ground_summary_hist]
-    gmys = [g[4] for g in ground_summary_hist]
-    gmhs = [g[5] for g in ground_summary_hist]
-    grxs = [g[6] for g in ground_summary_hist]
-    grys = [g[7] for g in ground_summary_hist]
-    grhs = [g[8] for g in ground_summary_hist]
-
-    plxs = [p[0] for p in pred_summary_hist]
-    plys = [p[1] for p in pred_summary_hist]
-    plhs = [p[2] for p in pred_summary_hist]
-    pmxs = [p[3] for p in pred_summary_hist]
-    pmys = [p[4] for p in pred_summary_hist]
-    pmhs = [p[5] for p in pred_summary_hist]
-    prxs = [p[6] for p in pred_summary_hist]
-    prys = [p[7] for p in pred_summary_hist]
-    prhs = [p[8] for p in pred_summary_hist]
-
-    # x-coords for plotting
-    ts = 100*np.arange(len(ground_summary_hist))
     fig = plt.figure()
-    plt.title('X')
-    plt.plot(ts, gmxs, '-o', label='Ground')
-    plt.plot(ts, pmxs, '-o', label='Pred')
-    plt.legend(loc='best')
+    plt.subplot(121)
+    plt.title('Ground Truth')
+    plt.imshow(grounds[0][::-1,:], cmap='hot', interpolation='nearest')
+    plt.subplot(122)
+    plt.title('Network Predicted')
+    plt.imshow(preds[0][::-1,:], cmap='hot', interpolation='nearest')
     fig.canvas.draw()
-    X = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    X = X.reshape(1, 480, 640, 3)
-    plt.clf()
-
-    plt.title('Y')
-    plt.plot(ts, glys, '-o', label='Left Ground')
-    plt.plot(ts, plys, '-o', label='Left Pred')
-    plt.plot(ts, gmys, '-o', label='Mid Ground')
-    plt.plot(ts, pmys, '-o', label='Mid Pred')
-    plt.plot(ts, grys, '-o', label='Right Ground')
-    plt.plot(ts, prys, '-o', label='Right Pred')
-    plt.legend(loc='best')
-    fig.canvas.draw()
-    Y = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    Y = Y.reshape(1, 480, 640, 3)
-    plt.clf()
-
-    plt.title('H')
-    plt.plot(ts, gmhs, '-o', label='Ground')
-    plt.plot(ts, pmhs, '-o', label='Pred')
-    plt.legend(loc='best')
-    fig.canvas.draw()
-    H = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    H = H.reshape(1, 480, 640, 3)
+    PLOT = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    PLOT = PLOT.reshape(1, 480, 640, 3)
     plt.close()
-
-    return X, Y, H
+    return PLOT
 
 def train_loop():
     """Training loop to feed model images and labels and update weights"""
@@ -356,14 +299,15 @@ def train_loop():
         ground_truths = np.stack(batch_ground_truths)
 
         if i % FLAGS.log_every != 0:
-            _, curr_loss, pred_output = sess.run([train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
+            _, _, curr_loss, pred_output = sess.run([check_op, train_op, mean_loss, pred_tf], {img_input : cam_imgs, real_output : ground_truths})
         else:
             # add special stuff for logging to tensorboard
             _, curr_loss, pred_output, tsumm  = sess.run([train_op, mean_loss, pred_tf, train_summary], {img_input : cam_imgs, real_output : ground_truths})
             train_writer.add_summary(tsumm, i)
-            #$matplotx, matploty, matploth = summary_plots(ground_truths, pred_output)
-            #psumm = sess.run([plot_summary], {x_plot: matplotx, y_plot: matploty, h_plot: matploth})[0]
-            #train_writer.add_summary(psumm, i)
+
+            matplot_gp = summary_plots(ground_truths, pred_output)
+            psumm = sess.run([plot_summary], {groundpred_plot: matplot_gp})[0]
+            train_writer.add_summary(psumm, i)
 
         if i % FLAGS.save_every == 0:
             save_path = saver.save(sess, FLAGS.save_path)
@@ -434,18 +378,6 @@ if __name__ == '__main__':
         just_visualize()
         exit(0)
 
-    # try to load summary histories from file
-    if os.path.isfile(FLAGS.logdir+'ssummary.pkl'):
-        try:
-            with open(FLAGS.logdir+'ssummary.pkl', 'rb') as f:
-                ground_summary_hist, pred_summary_hist = pickle.load(f)
-        except:
-            ground_summary_hist = []
-            pred_summary_hist = []
-    else:
-        ground_summary_hist = []
-        pred_summary_hist = []
-
     if FLAGS.clean_log:
         ground_summary_hist = []
         pred_summary_hist = []
@@ -465,8 +397,6 @@ if __name__ == '__main__':
         reshape = tf.keras.layers.Reshape((392, 256))
         conv_out = reshape(conv_section.layers[-1].output)
         keras_vgg16 = tf.keras.models.Model(conv_section.input, conv_out)
-        # Print summary on architecture
-        keras_vgg16.summary()
         conv_net = keras_vgg16
 
     elif FLAGS.architecture == 'resnet50':
@@ -475,9 +405,10 @@ if __name__ == '__main__':
         reshape = tf.keras.layers.Reshape((392, 256))
         conv_out = reshape(conv_section.layers[-1].output)
         resnet50 = tf.keras.models.Model(conv_section.input, conv_out)
-        # Print summary on architecture
-        resnet50.summary()
         conv_net = resnet50
+
+    # Print summary on architecture
+    conv_net.summary()
 
     # Capture output shape of net for generating ground truth
     grid_shape = (392, 256) # hard-coded shape of conv-net output 
@@ -489,7 +420,8 @@ if __name__ == '__main__':
     real_output = tf.placeholder(tf.float32, shape=(None,)+grid_shape, name='real_output')
     
     # loss (sum of squares)
-    loss = tf.losses.sigmoid_cross_entropy(real_output, pred_tf)
+    loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=real_output, logits=pred_tf)
+    #mean_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=real_output, logits=pred_tf)[0][100][100]
     mean_loss = tf.reduce_mean(tf.losses.sigmoid_cross_entropy(real_output, pred_tf))
     # optimizer
     optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate) # 1e-4 suggested from dom rand paper
@@ -501,22 +433,17 @@ if __name__ == '__main__':
     else:
         train_op = optimizer.minimize(loss)
 
-    #check_op = tf.add_check_numerics_ops()
+    check_op = tf.add_check_numerics_ops()
 
     # SUMMARY STUFF
-    ##x_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='x_plot')
-    ##y_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='y_plot')
-    ##h_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='h_plot')
+    groundpred_plot = tf.placeholder(tf.uint8, shape=(None, 480, 640, 3), name='groundpred_plot')
 
     input_summary = tf.summary.image('input', img_input, 10)
     mean_loss_summary = tf.summary.scalar('mean_loss', mean_loss)
     loss_hist = tf.summary.histogram('loss_histogram', loss)
     train_summary = tf.summary.merge([input_summary, mean_loss_summary, loss_hist])
 
-    ##x_summary_plot = tf.summary.image('plot_x', x_plot, 1)
-    ##y_summary_plot = tf.summary.image('plot_y', y_plot, 1)
-    ##h_summary_plot = tf.summary.image('plot_h', h_plot, 1)
-    ##plot_summary = tf.summary.merge([x_summary_plot, y_summary_plot, h_summary_plot])
+    plot_summary = tf.summary.image('plot_groundpred', groundpred_plot) 
 
     sess = tf.Session()
     train_writer = tf.summary.FileWriter(FLAGS.logdir + '/train', sess.graph)

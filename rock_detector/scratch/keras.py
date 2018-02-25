@@ -23,7 +23,7 @@ keras_vgg16.summary()
 #                      metric='accuracy')
 
 
-cam_img =  preproc_image(matplotlib.image.imread("assets/practice.jpg"))
+cam_img =  preproc_image(matplotlib.image.imread("../assets/practice.jpg"))
 cam_imgs = cam_img.reshape((1, 224, 224, 3))
 
 

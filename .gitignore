@@ -1,10 +1,10 @@
-weights/*
+*/weights/*
 *.swp
 assets/add_mesh_rocks/
 assets/images/
 assets/data/day1/*
-xmls/nasa/meshes/rock*.stl
-xmls/nasa/meshes/dirt*.stl
+*/xmls/nasa/meshes/rock*.stl
+*/xmls/nasa/meshes/dirt*.stl
 MUJOCO_LOG.TXT
 
 

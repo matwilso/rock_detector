@@ -11,7 +11,7 @@ def make_settings():
     settings = {}
     num_of_rocks = 1
 
-    obj = json.load(open('assets/add_mesh_rocks.json'))
+    obj = json.load(open('../assets/add_mesh_rocks.json'))
     presets = [obj["settings"]["default"]] + obj["settings"]["preset"]
 
     for preset in presets:
