@@ -45,28 +45,28 @@ rock detector. exciting uh?
 
 ## Install `mujoco_py`
 
-This was a huge headache and I had to do some hacky stuff to get it to work on 
+READ [THIS](https://github.com/openai/mujoco-py/pull/145#issuecomment-356938564) if you are getting `ERROR: GLEW initialization error: Missing GL version`
+
+~~This was a huge headache and I had to do some hacky stuff to get it to work on 
 my Ubuntu desktop.  Mac was really easy to get it working and I would guess putting 
 it in the cloud is not bad, because I'm pretty sure that's the way the folks at 
-OpenAI are doing it.
+OpenAI are doing it.-~~
 
-To get it to work, I cloned the repo, modified some source files, ran sudo python3 setup.py install in the folder and it somewhat worked.
+~~To get it to work, I cloned the repo, modified some source files, ran sudo python3 setup.py install in the folder and it somewhat worked.~~
+
 ```
 git clone https://github.com/openai/mujoco-py.git
-
 cd mujoco_py
-
 pip3 install -r requirements.txt
-
-sudo python3 setup.py install 
+sudo python3 setup.py install
 ```
 
-Then, there will be many errors to fix, but most several are fixed by apt-get getting
-or pip installing something.
+~~Then, there will be many errors to fix, but most several are fixed by apt-get getting
+or pip installing something.~~
 
-After that, I was still getting some errors, like [this](https://github.com/openai/mujoco-py/issues/44).
+~~After that, I was still getting some errors, like [this](https://github.com/openai/mujoco-py/issues/44).
 I had to do some hacky stuff and I am not using GPU rendering, but it is running.
-If you have any issues, feel free to reach out to me.  
+If you have any issues, feel free to reach out to me.~~
 
 
 
